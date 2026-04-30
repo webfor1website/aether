@@ -283,6 +283,14 @@ Add Aether trust checks to your CI pipeline:
 
 ---
 
+## Releases
+
+```bash
+cargo install --git https://github.com/webfor1website/aether aether-cli
+```
+
+---
+
 ## Status
 
 Core pipeline solid. Multi-file imports. Trust evolution. Weighted scoring by call depth. LSP with live hover. VS Code extension. Interop via aether wrap. Extern fn runtime support.
