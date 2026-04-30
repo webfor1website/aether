@@ -31,6 +31,20 @@ impl std::str::FromStr for AuthorType {
             Ok(AuthorType::AI(model.to_string()))
         } else if let Some(pass) = s.strip_prefix("transform:") {
             Ok(AuthorType::Transform(pass.to_string()))
+        } else if s == "claude" {
+            Ok(AuthorType::AI("claude".to_string()))
+        } else if s == "cursor" {
+            Ok(AuthorType::AI("cursor".to_string()))
+        } else if s == "grok" {
+            Ok(AuthorType::AI("grok".to_string()))
+        } else if s == "claude-likely" {
+            Ok(AuthorType::AI("claude-likely".to_string()))
+        } else if s == "claude-possible" {
+            Ok(AuthorType::AI("claude-possible".to_string()))
+        } else if s == "cursor-likely" {
+            Ok(AuthorType::AI("cursor-likely".to_string()))
+        } else if s == "grok-likely" {
+            Ok(AuthorType::AI("grok-likely".to_string()))
         } else {
             Err(format!("Invalid author type: {}", s))
         }
