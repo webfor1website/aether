@@ -1,5 +1,8 @@
 name: Release
 
+permissions:
+  contents: write
+
 on:
   push:
     tags:
@@ -25,7 +28,7 @@ jobs:
         cp target/release/aether-cli aether-cli-linux-x64
 
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: |
           aether-cli-linux-x64
