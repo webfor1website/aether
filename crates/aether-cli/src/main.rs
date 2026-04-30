@@ -1,5 +1,8 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
+use std::fs;
+use std::env;
 
 #[derive(Parser)]
 struct Cli {
@@ -43,6 +46,109 @@ enum Commands {
     Report {
         path: PathBuf,
     },
+}
+
+/// Policy configuration loaded from .aether-policy.toml
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct PolicyConfig {
+    pub trust: TrustConfig,
+    pub sources: SourcesConfig,
+    pub quarantine: QuarantineConfig,
+    pub output: OutputConfig,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct TrustConfig {
+    pub min_trust: f64,
+    pub mode: String,         // "enforce" or "report"
+    pub scoring: String,      // "weighted" or "flat"
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct SourcesConfig {
+    pub allowed: Vec<String>,
+    pub blocked: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct QuarantineConfig {
+    pub auto_quarantine_below: f64,
+    pub persist_quarantine: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct OutputConfig {
+    pub format: String,       // "text", "json", "sarif"
+    pub show_scores: bool,
+}
+
+impl Default for PolicyConfig {
+    fn default() -> Self {
+        Self {
+            trust: TrustConfig {
+                min_trust: 0.0,
+                mode: "report".to_string(),
+                scoring: "weighted".to_string(),
+            },
+            sources: SourcesConfig {
+                allowed: vec!["user".to_string(), "claude".to_string(), "cursor".to_string(), "grok".to_string(), "ai".to_string()],
+                blocked: vec![],
+            },
+            quarantine: QuarantineConfig {
+                auto_quarantine_below: 0.4,
+                persist_quarantine: true,
+            },
+            output: OutputConfig {
+                format: "text".to_string(),
+                show_scores: true,
+            },
+        }
+    }
+}
+
+/// Find .aether-policy.toml by walking up the directory tree
+fn find_policy_file() -> Option<PathBuf> {
+    let current_dir = env::current_dir().ok()?;
+    let mut path = current_dir;
+    
+    loop {
+        let policy_file = path.join(".aether-policy.toml");
+        if policy_file.exists() {
+            return Some(policy_file);
+        }
+        
+        // Move to parent directory
+        if !path.pop() {
+            break; // Reached filesystem root
+        }
+    }
+    
+    None
+}
+
+/// Load policy configuration from .aether-policy.toml
+fn load_policy_config() -> PolicyConfig {
+    if let Some(policy_path) = find_policy_file() {
+        eprintln!("[aether] policy loaded from: {}", policy_path.display());
+        
+        match fs::read_to_string(&policy_path) {
+            Ok(content) => {
+                match toml::from_str::<PolicyConfig>(&content) {
+                    Ok(config) => config,
+                    Err(e) => {
+                        eprintln!("[aether] warning: failed to parse policy file: {}", e);
+                        PolicyConfig::default()
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("[aether] warning: failed to read policy file: {}", e);
+                PolicyConfig::default()
+            }
+        }
+    } else {
+        PolicyConfig::default()
+    }
 }
 
 mod session;
@@ -947,6 +1053,9 @@ fn main() {
 
     let cli = Cli::parse();
 
+    // Load policy configuration
+    let policy_config = load_policy_config();
+
     match cli.command {
         Some(Commands::Check { files }) => {
             for file in files {
@@ -976,34 +1085,11 @@ fn main() {
             let workspace_root = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
             let mut discipline_engine = aether_discipline::DisciplineEngine::new(&workspace_root);
             
-            // Check for min_trust in config file if not provided via CLI
+            // Use min_trust from CLI flag, policy config, or default
             let effective_min_trust = if let Some(cli_min_trust) = min_trust {
                 cli_min_trust
             } else {
-                // Look for .aether-wellbeing file in the same directory as the .ae file
-                if let Some(parent_dir) = file.parent() {
-                    let config_path = parent_dir.join(".aether-wellbeing");
-                    if let Ok(config_content) = std::fs::read_to_string(&config_path) {
-                        // Parse config file for min_trust line
-                        let mut config_min_trust = 0.0;
-                        for line in config_content.lines() {
-                            let line = line.trim();
-                            if line.starts_with("min_trust:") {
-                                if let Some(value_str) = line.strip_prefix("min_trust:").map(|s| s.trim()) {
-                                    if let Ok(parsed_value) = value_str.parse::<f64>() {
-                                        config_min_trust = parsed_value;
-                                        break; // found the line, stop parsing
-                                    }
-                                }
-                            }
-                        }
-                        config_min_trust
-                    } else {
-                        0.0
-                    }
-                } else {
-                    0.0
-                }
+                policy_config.trust.min_trust
             };
             
             // Read the file first
@@ -1394,6 +1480,13 @@ for func in &prov_result.typed_ast.program.functions {
 
         Some(Commands::Report { path }) => {
             generate_provenance_report(&path);
+            
+            // Check trust threshold from policy if in enforce mode
+            if policy_config.trust.mode == "enforce" {
+                // This would require implementing trust score calculation for the report
+                // For now, just show a warning about the policy
+                eprintln!("[aether] policy mode: enforce (min_trust: {:.2})", policy_config.trust.min_trust);
+            }
         }
 
         None => {
