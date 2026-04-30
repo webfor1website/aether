@@ -325,26 +325,40 @@ fn wrap_rust_file(content: &str, source: &str, confidence: f64) -> String {
             ("cursor-likely".to_string(), 0.65)
         }
         CursorDetection::None => {
-            // Fall through to Claude detection
-            let claude_detection = detect_claude_authorship(content);
-            match claude_detection {
-                ClaudeDetection::High => {
-                    eprintln!("[aether] detected: claude (high confidence — explicit marker)");
-                    ("claude".to_string(), 0.85)
+            // Fall through to Grok detection
+            let grok_detection = detect_grok_authorship(content);
+            match grok_detection {
+                GrokDetection::High => {
+                    eprintln!("[aether] detected: grok (explicit marker)");
+                    ("grok".to_string(), 0.90)
                 }
-                ClaudeDetection::Medium(score) => {
-                    eprintln!("[aether] detected: claude-likely (medium — {}/6 structural patterns matched)", score);
-                    ("claude-likely".to_string(), 0.65)
+                GrokDetection::Medium(score) => {
+                    eprintln!("[aether] detected: grok-likely (medium — {}/7 patterns matched)", score);
+                    ("grok-likely".to_string(), 0.65)
                 }
-                ClaudeDetection::Low(score) => {
-                    eprintln!("[aether] detected: claude-possible (low — style heuristics only, verify manually)");
-                    ("claude-possible".to_string(), 0.45)
-                }
-                ClaudeDetection::None => {
-                    if source == "ai" {
-                        ("ai".to_string(), 0.60)
-                    } else {
-                        (source.to_string(), confidence)
+                GrokDetection::None => {
+                    // Fall through to Claude detection
+                    let claude_detection = detect_claude_authorship(content);
+                    match claude_detection {
+                        ClaudeDetection::High => {
+                            eprintln!("[aether] detected: claude (high confidence — explicit marker)");
+                            ("claude".to_string(), 0.85)
+                        }
+                        ClaudeDetection::Medium(score) => {
+                            eprintln!("[aether] detected: claude-likely (medium — {}/6 structural patterns matched)", score);
+                            ("claude-likely".to_string(), 0.65)
+                        }
+                        ClaudeDetection::Low(score) => {
+                            eprintln!("[aether] detected: claude-possible (low — style heuristics only, verify manually)");
+                            ("claude-possible".to_string(), 0.45)
+                        }
+                        ClaudeDetection::None => {
+                            if source == "ai" {
+                                ("ai".to_string(), 0.60)
+                            } else {
+                                (source.to_string(), confidence)
+                            }
+                        }
                     }
                 }
             }
@@ -385,6 +399,13 @@ enum ClaudeDetection {
 enum CursorDetection {
     High,
     Medium(usize), // score out of 5
+    None,
+}
+
+#[derive(Debug)]
+enum GrokDetection {
+    High,
+    Medium(usize), // score out of 7
     None,
 }
 
@@ -730,6 +751,77 @@ fn detect_cursor_authorship(content: &str) -> CursorDetection {
         CursorDetection::Medium(medium_score)
     } else {
         CursorDetection::None
+    }
+}
+
+// Grok defaults to free functions over wrapper structs, 
+// thiserror for error types, IntoResponse on errors directly,
+// Arc<RwLock> for concurrency, and thinks web-framework-first.
+// Patterns extracted from observed output, not guesswork.
+fn detect_grok_authorship(content: &str) -> GrokDetection {
+    // HIGH CONFIDENCE: explicit markers
+    let high_patterns = [
+        "// Grok",
+        "// xAI",
+        "// @grok",
+    ];
+    
+    let high_matches = high_patterns.iter().filter(|&&pattern| content.contains(pattern)).count();
+    if high_matches > 0 {
+        return GrokDetection::High;
+    }
+    
+    // MEDIUM CONFIDENCE: structural patterns
+    let mut medium_score = 0;
+    
+    // Free functions for crypto/hashing instead of wrapper structs
+    // (detect: no struct containing "Hasher" or "Manager" but hash_password or generate_jwt as standalone fn present)
+    let has_hasher_manager_struct = content.contains("Hasher") || content.contains("Manager");
+    let has_hash_password_fn = content.contains("hash_password") || content.contains("generate_jwt");
+    
+    if !has_hasher_manager_struct && has_hash_password_fn {
+        medium_score += 1;
+    }
+    
+    // thiserror macro used: "#[derive(Error" present
+    if content.contains("#[derive(Error") {
+        medium_score += 1;
+    }
+    
+    // IntoResponse implemented on error type: "impl IntoResponse for" present
+    if content.contains("impl IntoResponse for") {
+        medium_score += 1;
+    }
+    
+    // Arc<RwLock< pattern present (Grok's default concurrency)
+    if content.contains("Arc<RwLock<") {
+        medium_score += 1;
+    }
+    
+    // Production notes as inline comments: "// PRODUCTION NOTE" or "// In production" present
+    if content.contains("// PRODUCTION NOTE") || content.contains("// In production") {
+        medium_score += 1;
+    }
+    
+    // No Builder pattern AND no impl Default 
+    // (absence of "Builder" struct AND absence of "impl Default")
+    let has_builder = content.contains("Builder");
+    let has_impl_default = content.contains("impl Default");
+    
+    if !has_builder && !has_impl_default {
+        medium_score += 1;
+    }
+    
+    // Full main.rs with route definitions included in same output
+    // (detect: "axum" AND "Router::new()" both present)
+    if content.contains("axum") && content.contains("Router::new()") {
+        medium_score += 1;
+    }
+    
+    if medium_score >= 2 {
+        GrokDetection::Medium(medium_score)
+    } else {
+        GrokDetection::None
     }
 }
 
