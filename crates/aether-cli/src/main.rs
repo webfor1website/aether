@@ -65,7 +65,7 @@ fn interactive_trust_review(
             println!("Lines: {}-{}", lines.0, lines.1);
             println!();
             println!("Code:");
-            for (i, line) in content.lines().skip(lines.0 - 1).take(lines.1 - lines.0 + 1).enumerate() {
+            for (_i, line) in content.lines().skip(lines.0 - 1).take(lines.1 - lines.0 + 1).enumerate() {
                 println!("    {}", line);
             }
         }
@@ -348,7 +348,7 @@ fn wrap_rust_file(content: &str, source: &str, confidence: f64) -> String {
                             eprintln!("[aether] detected: claude-likely (medium — {}/6 structural patterns matched)", score);
                             ("claude-likely".to_string(), 0.65)
                         }
-                        ClaudeDetection::Low(score) => {
+                        ClaudeDetection::Low(_score) => {
                             eprintln!("[aether] detected: claude-possible (low — style heuristics only, verify manually)");
                             ("claude-possible".to_string(), 0.45)
                         }
@@ -571,14 +571,14 @@ fn detect_claude_authorship(content: &str) -> ClaudeDetection {
             // Count lines until next function or end
             for j in i+1..lines.len() {
                 if lines[j].trim().starts_with("fn ") || (j == lines.len() - 1) {
-                    total_lines += (j - i);
+                    total_lines += j - i;
                     break;
                 }
             }
         }
     }
     
-    if function_count > 0 && total_lines as f64 / function_count as f64 < 12.0 {
+    if function_count > 0 && total_lines as f64 / (function_count as f64) < 12.0 {
         low_score += 1;
     }
     
@@ -649,7 +649,7 @@ fn detect_cursor_authorship(content: &str) -> CursorDetection {
     if !functions.is_empty() {
         let mut error_wrapped_functions = 0;
         
-        for func_match in functions {
+        for func_match in &functions {
             let func_start = func_match.start();
             // Look for the function body (next opening brace)
             if let Some(brace_pos) = content[func_start..].find('{') {
@@ -724,7 +724,7 @@ fn detect_cursor_authorship(content: &str) -> CursorDetection {
     if !functions.is_empty() {
         let mut documented_functions = 0;
         
-        for func_match in functions {
+        for func_match in &functions {
             let func_start = func_match.start();
             // Look backwards for doc comments
             let before_func = &content[..func_start];
@@ -753,7 +753,7 @@ fn detect_cursor_authorship(content: &str) -> CursorDetection {
     let pub_functions: Vec<_> = pub_fn_regex.find_iter(content).collect();
     let mut documented_pub_functions = 0;
     
-    for func_match in pub_functions {
+    for func_match in &pub_functions {
         let func_start = func_match.start();
         // Look backwards for doc comments
         let before_func = &content[..func_start];
