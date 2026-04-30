@@ -472,6 +472,68 @@ fn detect_claude_authorship(content: &str) -> ClaudeDetection {
         medium_score += 1;
     }
     
+    // NEW PATTERNS - Additional Claude-specific MEDIUM confidence signals
+    
+    // run() wrapper function: "fn run(" present, separate from main()
+    if content.contains("fn run(") {
+        medium_score += 1;
+    }
+    
+    // eprintln! for progress: "eprintln!" present (not just in tests)
+    if content.contains("eprintln!") {
+        medium_score += 1;
+    }
+    
+    // Zero unwrap in production: ".unwrap()" count is 0 in non-test code
+    // (check lines not inside #[cfg(test)] blocks)
+    let lines: Vec<_> = content.lines().collect();
+    let mut in_test_block = false;
+    let mut unwrap_count = 0;
+    
+    for line in &lines {
+        let trimmed = line.trim();
+        
+        // Track if we're in a test block
+        if trimmed.starts_with("#[cfg(test)]") {
+            in_test_block = true;
+        } else if trimmed.starts_with("#[") && !trimmed.starts_with("#[cfg(test)]") {
+            in_test_block = false;
+        } else if trimmed.starts_with("mod ") && trimmed.contains("test") {
+            in_test_block = true;
+        } else if trimmed.starts_with("}") && in_test_block {
+            in_test_block = false;
+        }
+        
+        // Count unwrap() only outside test blocks
+        if !in_test_block && trimmed.contains(".unwrap()") {
+            unwrap_count += 1;
+        }
+    }
+    
+    if unwrap_count == 0 {
+        medium_score += 1;
+    }
+    
+    // Edge case comments: "// missing" OR "// non-numeric" OR "// +1 for" present
+    // (Claude comments on WHY, not WHAT)
+    if content.contains("// missing") || content.contains("// non-numeric") || content.contains("// +1 for") {
+        medium_score += 1;
+    }
+    
+    // BufWriter usage: "BufWriter" present
+    if content.contains("BufWriter") {
+        medium_score += 1;
+    }
+    
+    // Graceful column fallback: "col_" followed by digit pattern 
+    // for auto-generated headers
+    if content.contains("col_") {
+        let col_regex = regex::Regex::new(r"col_\d+").unwrap();
+        if col_regex.is_match(content) {
+            medium_score += 1;
+        }
+    }
+    
     if medium_score >= 2 {
         return ClaudeDetection::Medium(medium_score);
     }
@@ -783,11 +845,7 @@ fn detect_grok_authorship(content: &str) -> GrokDetection {
         medium_score += 1;
     }
     
-    // thiserror macro used: "#[derive(Error" present
-    if content.contains("#[derive(Error") {
-        medium_score += 1;
-    }
-    
+        
     // IntoResponse implemented on error type: "impl IntoResponse for" present
     if content.contains("impl IntoResponse for") {
         medium_score += 1;
