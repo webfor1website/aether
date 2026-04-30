@@ -1,0 +1,15 @@
+# Aether 0.1.0+test
+
+@prov(source: "ai", confidence: 0.6)
+fn ai_generated(n: Int) -> Int {
+    n * 2
+}
+
+@prov(source: "user", confidence: 1.0)
+fn human_verified(n: Int) -> Int {
+    n + 1
+}
+
+fn main() -> Int {
+    human_verified(ai_generated(5))
+}

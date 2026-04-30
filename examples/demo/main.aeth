@@ -1,0 +1,13 @@
+import "lib.aeth";
+
+@prov(source: "user", confidence: 1.0)
+fn main() -> Int {
+  let result1 = add_numbers(5, 3);
+  let result2 = optimize_query("SELECT * FROM users WHERE active = 1");
+  let result3 = helper_function(10);
+  result1 + result3
+}
+
+fn helper_function(x: Int) -> Int {
+  x * 2
+}

@@ -1,0 +1,9 @@
+# Aether 0.1.0+test
+
+fn factorial(n: Int) -> Int {
+    if n == 0 { 1 } else { n * factorial(n - 1) }
+}
+
+fn main() -> Int {
+    factorial(5)
+}

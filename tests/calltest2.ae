@@ -1,0 +1,13 @@
+# Aether 0.1.0+test
+
+fn dec(n: Int) -> Int {
+    n - 1
+}
+
+fn wrap(n: Int) -> Int {
+    dec(n - 1)
+}
+
+fn main() -> Int {
+    wrap(5)
+}

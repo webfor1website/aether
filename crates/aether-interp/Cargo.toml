@@ -1,0 +1,10 @@
+[package]
+name = "aether-interp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aether-core = { path = "../aether-core" }
+aether-ir = { path = "../aether-ir" }
+aether-prov-store = { path = "../aether-prov-store" }
+thiserror = { workspace = true }

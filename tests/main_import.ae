@@ -1,0 +1,10 @@
+import "lib_trusted.ae";
+
+@prov(source: "user", confidence: 1.0)
+fn compute(x: Int) -> Int {
+  add(x, multiply(x, 2))
+}
+
+fn main() -> Int {
+  compute(3)
+}

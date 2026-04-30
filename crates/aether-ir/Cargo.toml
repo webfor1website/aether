@@ -1,0 +1,20 @@
+[package]
+name = "aether-ir"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+homepage.workspace = true
+repository.workspace = true
+documentation.workspace = true
+
+[dependencies]
+aether-core = { path = "../aether-core" }
+aether-checker = { path = "../aether-checker" }
+aether-parser = { path = "../aether-parser" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }

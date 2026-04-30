@@ -1,0 +1,37 @@
+{
+  "name": "aether-lsp",
+  "displayName": "Aether Language Server",
+  "description": "VS Code extension for Aether provenance-first programming language",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:aether"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "aether",
+        "aliases": ["Aether", "aether"],
+        "extensions": [
+          ".aeth",
+          ".ae"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ]
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4"
+  }
+}

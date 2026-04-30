@@ -1,0 +1,7 @@
+# Aether 0.1.0+test
+
+# Test basic variable support
+fn main() -> Int {
+    let x: Int = 42;
+    x
+}

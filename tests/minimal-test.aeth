@@ -1,0 +1,4 @@
+@prov(author: "human", confidence: 1.0)
+fn test() -> Int {
+  42
+}

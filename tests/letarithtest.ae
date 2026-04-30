@@ -1,0 +1,10 @@
+# Aether 0.1.0+test
+
+fn double(n: Int) -> Int {
+    n + n
+}
+
+fn main() -> Int {
+    let x: Int = 5;
+    double(x - 1)
+}

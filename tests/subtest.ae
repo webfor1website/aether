@@ -1,0 +1,9 @@
+# Aether 0.1.0+test
+
+fn decr(n: Int) -> Int {
+    n - 1
+}
+
+fn main() -> Int {
+    decr(5)
+}

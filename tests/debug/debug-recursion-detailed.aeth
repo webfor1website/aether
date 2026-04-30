@@ -1,0 +1,11 @@
+fn debug_step(n: Int) -> Int {
+    if n == 2 {
+        999  // Should return 999 when n == 2
+    } else {
+        n  // Should return n when n != 2
+    }
+}
+
+fn main() -> Int {
+    debug_step(3)
+}

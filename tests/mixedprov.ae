@@ -1,0 +1,14 @@
+# Aether 0.1.0+test
+
+@prov(source: "user")
+fn trusted(n: Int) -> Int {
+    n + 1
+}
+
+fn untrusted(n: Int) -> Int {
+    n - 1
+}
+
+fn main() -> Int {
+    trusted(untrusted(10))
+}

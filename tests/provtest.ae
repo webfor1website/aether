@@ -1,0 +1,10 @@
+# Aether 0.1.0+test
+
+@prov(source: "user")
+fn get_value() -> Int {
+    42
+}
+
+fn main() -> Int {
+    get_value()
+}

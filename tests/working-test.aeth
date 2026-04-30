@@ -1,0 +1,6 @@
+# Aether 0.1.0+test
+
+# Simple working test without extern
+fn main() -> Int {
+    42
+}

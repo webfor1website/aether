@@ -1,0 +1,10 @@
+# Aether 0.1.0+abc123def
+
+# Aether Hello World Demo
+# A simple example showing basic syntax
+
+extern print: (String) -> Unit;
+
+fn main() -> Unit {
+    print("Hello, Aether!");
+}

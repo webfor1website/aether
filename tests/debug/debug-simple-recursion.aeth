@@ -1,0 +1,11 @@
+fn count_down(n: Int) -> Int {
+    if n == 0 {
+        0
+    } else {
+        count_down(n - 1)
+    }
+}
+
+fn main() -> Int {
+    count_down(2)
+}

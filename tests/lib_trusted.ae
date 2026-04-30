@@ -1,0 +1,9 @@
+@prov(source: "user", confidence: 1.0)
+fn add(a: Int, b: Int) -> Int {
+  a + b
+}
+
+@prov(source: "ai", confidence: 0.6)
+fn multiply(a: Int, b: Int) -> Int {
+  a * b
+}

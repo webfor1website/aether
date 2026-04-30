@@ -1,0 +1,12 @@
+# Aether 0.1.0+git.abc123
+
+@prov(
+  author: "ai:claude-sonnet-4-6",
+  model: "claude-sonnet-4-6",
+  timestamp: "2026-04-24T00:00:00Z",
+  prompt: "test-prompt",
+  confidence: 0.85
+)
+fn test() -> Int {
+  42
+}

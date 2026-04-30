@@ -1,0 +1,207 @@
+(* ============================================================
+   Aether Grammar — v0.1.1 (Rogue Edition)
+   ============================================================
+   - Max lookahead = 1
+   - No ambiguity allowed
+   - Binary ops now have proper precedence layers
+   - Blocks are expression-oriented but more forgiving
+   - Trailing commas everywhere AI will want them
+   - Comments supported
+   ============================================================ *)
+   Design Notes:
+   - All productions are unambiguous; max lookahead = 1 token.
+   - No operator overloading; all operators are built-in and fixed.
+   - No implicit conversions; coercions are explicit named calls.
+   - No variadic functions; all arities fixed at declaration.
+   - No null; Option[T] is the only nullable construct.
+   - Shadowing requires the `shadow` keyword — never implicit.
+   - Every extern must carry a @prov tag; enforced at parse time.
+   - Forward references require explicit `declare`.
+
+   Inspirations & Divergences:
+   - Wyvern: capability-safe modules. Aether diverges by making
+     provenance structural rather than just capability-safe.
+   - Roc: no null, tag unions, explicit effects. Aether borrows
+     the effect discipline but keeps the type system simpler.
+   - Elm: no runtime exceptions, forced explicitness. Aether
+     shares this philosophy; effects are the extension point.
+   ============================================================ *)
+
+
+(* --- Top Level --- *)
+
+program         = version_header, { top_level }, EOF ;
+
+version_header  = "#" , "Aether" , semver , "+" , git_hash ;
+semver          = digit+ , "." , digit+ , "." , digit+ ;
+git_hash        = hex_char+ ;
+
+top_level       = import_decl
+                | extern_decl
+                | type_decl
+                | effect_decl
+                | fn_decl
+                | declare_stmt ;
+
+
+(* --- Imports --- *)
+
+import_decl     = "import" , module_path , [ "as" , ident ] , ";" ;
+module_path     = ident , { "." , ident } ;
+
+
+(* --- Extern (provenance tag mandatory) --- *)
+
+extern_decl     = "extern" , provenance_tag , ident , ":" , type_expr , ";" ;
+
+
+(* --- Type Declarations --- *)
+
+type_decl       = "type" , ident , [ type_params ] , "=" , type_expr , ";" ;
+type_params     = "[" , ident , { "," , ident } , "]" ;
+
+type_expr       = named_type
+                | fn_type
+                | record_type
+                | union_type
+                | option_type ;
+
+named_type      = ident , [ "[" , type_expr , { "," , type_expr } , "]" ] ;
+fn_type         = "fn" , "(" , param_types , ")" , "->" , type_expr , effect_set ;
+param_types     = [ type_expr , { "," , type_expr } ] ;
+record_type     = "{" , field_type , { "," , field_type } , "}" ;
+field_type      = ident , ":" , type_expr ;
+union_type      = type_expr , "|" , type_expr ;
+option_type     = "Option" , "[" , type_expr , "]" ;
+
+
+(* --- Effect Declarations --- *)
+
+effect_decl     = "effect" , ident , "{" , { effect_op } , "}" ;
+effect_op       = ident , ":" , fn_type , ";" ;
+effect_set      = [ "!" , "{" , ident , { "," , ident } , "}" ] ;
+
+
+(* --- Function Declarations --- *)
+
+fn_decl         = [ provenance_tag ] ,
+                  "fn" , ident , [ type_params ] ,
+                  "(" , [ param_list ] , ")" ,
+                  "->" , type_expr ,
+                  effect_set ,
+                  block ;
+
+param_list      = param , { "," , param } ;
+param           = ident , ":" , type_expr ;
+
+
+(* --- Forward Declarations --- *)
+
+declare_stmt    = "declare" , ident , ":" , type_expr , ";" ;
+
+
+(* --- Blocks and Statements --- *)
+
+block           = "{" , { statement } , expr , "}" ;
+
+statement       = let_stmt
+                | shadow_stmt
+                | return_stmt
+                | expr_stmt ;
+
+let_stmt        = "let" , ident , [ ":" , type_expr ] , "=" , expr , ";" ;
+shadow_stmt     = "shadow" , ident , [ ":" , type_expr ] , "=" , expr , ";" ;
+return_stmt     = "return" , expr , ";" ;
+expr_stmt       = expr , ";" ;
+
+
+(* --- Expressions with precedence --- *)
+
+expr            = if_expr
+                | match_expr
+                | binary_expr
+                | unary_expr
+                | call_expr
+                | field_expr
+                | literal
+                | ident
+                | "(" , expr , ")" ;
+
+if_expr         = "if" , expr , block , [ "else" , block ] ;
+
+match_expr      = "match" , expr , "{" , match_arm , { "," , match_arm } , [","], "}" ;
+match_arm       = pattern , "=>" , expr ;
+
+call_expr       = expr , "(" , [ arg_list ] , ")" ;
+arg_list        = expr , { "," , expr } , [","] ;
+
+field_expr      = expr , "." , ident ;
+
+(* Binary with precedence *)
+binary_expr     = comparison_expr ;
+comparison_expr = additive_expr , { comparison_op , additive_expr } ;
+additive_expr   = multiplicative_expr , { additive_op , multiplicative_expr } ;
+multiplicative_expr = unary_expr , { multiplicative_op , unary_expr } ;
+
+comparison_op   = "==" | "!=" | "<" | ">" | "<=" | ">=" | "and" | "or" ;
+additive_op     = "+" | "-" ;
+multiplicative_op = "*" | "/" ;
+
+unary_expr      = unary_op , unary_expr | primary_expr ;
+unary_op        = "-" | "not" ;
+primary_expr    = call_expr | field_expr | literal | ident | "(" , expr , ")" ;
+
+field_expr      = expr , "." , ident ;
+
+
+(* --- Patterns --- *)
+
+pattern         = literal
+                | ident
+                | record_pattern
+                | tag_pattern
+                | wildcard ;
+
+record_pattern  = "{" , ident , { "," , ident } , "}" ;
+tag_pattern     = ident , [ "(" , pattern , ")" ] ;
+wildcard        = "_" ;
+
+
+(* --- Literals --- *)
+
+literal         = int_lit
+                | float_lit
+                | string_lit
+                | bool_lit
+                | record_lit
+                | option_lit ;
+
+int_lit         = digit+ ;
+float_lit       = digit+ , "." , digit+ ;
+string_lit      = '"' , { char - '"' } , '"' ;
+bool_lit        = "true" | "false" ;
+record_lit      = "{" , field_val , { "," , field_val } , "}" ;
+field_val       = ident , ":" , expr ;
+option_lit      = "Some" , "(" , expr , ")" | "None" ;
+
+
+(* --- Provenance Tag --- *)
+
+provenance_tag  = "@prov" , "(" , prov_field , { "," , prov_field } , ")" ;
+
+prov_field      = "author"     , ":" , string_lit    (* "human" | "ai:<model_id>" | "transform:<pass>" *)
+                | "model"      , ":" , string_lit    (* model identifier, optional for humans *)
+                | "timestamp"  , ":" , iso8601        (* UTC, validated at parse time *)
+                | "prompt"     , ":" , string_lit    (* SHA-256 of the originating prompt *)
+                | "confidence" , ":" , float_lit     (* 0.0 (untrusted) to 1.0 (verified) *)
+                | "parent"     , ":" , string_lit ;  (* UUID of parent provenance tag *)
+
+iso8601         = string_lit ; (* format: "YYYY-MM-DDTHH:MM:SSZ" — validated at parse time *)
+
+
+(* --- Lexical Rules --- *)
+
+ident           = letter , { letter | digit | "_" } ;
+letter          = "a".."z" | "A".."Z" ;
+digit           = "0".."9" ;
+hex_char        = digit | "a".."f" | "A".."F" ;

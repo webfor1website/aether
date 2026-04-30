@@ -1,0 +1,7 @@
+fn add_one(n: Int) -> Int {
+    n + 1
+}
+
+fn main() -> Int {
+    add_one(4)
+}

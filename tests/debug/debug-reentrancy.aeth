@@ -1,0 +1,9 @@
+fn test_call() -> Int {
+    42
+}
+
+fn main() -> Int {
+    test_call()
+    test_call()
+    10
+}

@@ -1,0 +1,6 @@
+# Aether 0.1.0+test
+
+# Test function call support
+fn main() -> Int {
+    greeting()
+}

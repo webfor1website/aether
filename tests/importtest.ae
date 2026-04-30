@@ -1,0 +1,5 @@
+import "provtest.ae";
+
+fn main() -> Int {
+  get_value()
+}

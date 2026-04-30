@@ -1,0 +1,8 @@
+# Aether 0.1.0+test
+
+# Test basic arithmetic support
+fn main() -> Int {
+    let x: Int = 40;
+    let y: Int = 2;
+    x + y
+}

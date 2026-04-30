@@ -1,0 +1,20 @@
+[package]
+name = "aether-fuzz"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+proptest = "1.4"
+aether-parser = { path = "../../crates/aether-parser" }
+aether-checker = { path = "../../crates/aether-checker" }
+aether-format = { path = "../../crates/aether-format" }
+aether-core = { path = "../../crates/aether-core" }
+uuid = { version = "1.0", features = ["v4"] }
+chrono = "0.4"
+petgraph = "0.6"
+
+[[test]]
+name = "property_tests"
+path = "property_tests.rs"
+harness = false
