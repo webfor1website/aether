@@ -274,6 +274,7 @@ fn process_aether_file(file_path: &std::path::Path, all_functions: &mut Vec<Func
                 let source_str = match &tag.author {
                     aether_core::AuthorType::Human => "user".to_string(),
                     aether_core::AuthorType::AI(model) => model.clone(),
+                    aether_core::AuthorType::Transform(_) => "transform".to_string(),
                 };
                 (source_str, tag.confidence)
             }
@@ -293,6 +294,7 @@ fn process_aether_file(file_path: &std::path::Path, all_functions: &mut Vec<Func
         let source_str = match &extern_decl.provenance.author {
             aether_core::AuthorType::Human => "user".to_string(),
             aether_core::AuthorType::AI(model) => model.clone(),
+            aether_core::AuthorType::Transform(_) => "transform".to_string(),
         };
         
         all_functions.push(FunctionInfo {
