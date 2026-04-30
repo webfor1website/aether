@@ -1,0 +1,18 @@
+name: CI with Aether Trust Check
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  aether-trust-check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Aether trust check
+      uses: webfor1website/aether/.github/workflows/aether-check.yml@main
+      with:
+        source-dir: './src'
+        min-trust: '0.7'

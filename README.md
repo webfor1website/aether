@@ -269,6 +269,20 @@ The long-term goal: Aether as a governance layer that wraps existing Rust/Python
 
 ---
 
+## CI Integration
+
+Add Aether trust checks to your CI pipeline:
+
+```yaml
+- name: Aether trust check
+  uses: webfor1website/aether/.github/workflows/aether-check.yml@main
+  with:
+    source-dir: './src'
+    min-trust: '0.7'
+```
+
+---
+
 ## Status
 
 Core pipeline solid. Multi-file imports. Trust evolution. Weighted scoring by call depth. LSP with live hover. VS Code extension. Interop via aether wrap. Extern fn runtime support.

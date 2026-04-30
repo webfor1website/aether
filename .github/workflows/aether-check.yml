@@ -1,0 +1,122 @@
+name: Aether Trust Check
+description: 'Check trust scores for AI-generated code using Aether provenance tracking'
+
+on:
+  pull_request:
+    branches: [ main ]
+
+inputs:
+  source-dir:
+    description: 'Source directory to check'
+    required: false
+    default: '.'
+  min-trust:
+    description: 'Minimum trust threshold (0.0-1.0)'
+    required: false
+    default: '0.0'
+
+jobs:
+  aether-check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+
+    - name: Cache Aether CLI
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/bin/aether-cli
+        key: aether-cli-${{ runner.os }}-v1
+
+    - name: Build Aether CLI
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        git clone https://github.com/webfor1website/aether.git /tmp/aether
+        cd /tmp/aether
+        cargo build --release
+        cp target/release/aether-cli ~/.cargo/bin/
+
+    - name: Check for Aether wellbeing config
+      id: config
+      run: |
+        if [ -f ".aether-wellbeing" ]; then
+          echo "config_found=true" >> $GITHUB_OUTPUT
+          MIN_TRUST=$(grep "min_trust:" .aether-wellbeing | cut -d':' -f2 | tr -d ' ')
+          if [ -n "$MIN_TRUST" ]; then
+            echo "config_min_trust=$MIN_TRUST" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "config_found=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Run Aether trust report
+      id: aether
+      run: |
+        SOURCE_DIR="${{ inputs.source-dir }}"
+        MIN_TRUST="${{ inputs.min-trust }}"
+        
+        # Use config min-trust if it exists and input wasn't provided
+        if [ "${{ steps.config.outputs.config_found }}" = "true" ] && [ "${{ inputs.min-trust }}" = "0.0" ]; then
+          if [ -n "${{ steps.config.outputs.config_min_trust }}" ]; then
+            MIN_TRUST="${{ steps.config.outputs.config_min_trust }}"
+          fi
+        fi
+        
+        # Run aether report
+        if [ "$MIN_TRUST" != "0.0" ]; then
+          aether report --min-trust "$MIN_TRUST" "$SOURCE_DIR"
+          EXIT_CODE=$?
+        else
+          aether report "$SOURCE_DIR"
+          EXIT_CODE=$?
+        fi
+        
+        echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+
+    - name: Parse Aether results
+      id: results
+      run: |
+        # Extract results from aether output (this would need to be enhanced based on actual aether output format)
+        TOTAL_FUNCTIONS=0
+        TAGGED_FUNCTIONS=0
+        FLAT_SCORE=0.0
+        
+        # Parse the output (simplified - would need to match actual aether output)
+        while IFS= read -r line; do
+          if [[ "$line" =~ tagged:[[:space:]]*([0-9]+)/([0-9]+) ]]; then
+            TAGGED_FUNCTIONS="${BASH_REMATCH[1]}"
+            TOTAL_FUNCTIONS="${BASH_REMATCH[2]}"
+          elif [[ "$line" =~ flat[[:space:]]score:[[:space:]]*([0-9.]+) ]]; then
+            FLAT_SCORE="${BASH_REMATCH[1]}"
+          fi
+        done < <(aether report "${{ inputs.source-dir }}" 2>&1 || true)
+        
+        echo "total_functions=$TOTAL_FUNCTIONS" >> $GITHUB_OUTPUT
+        echo "tagged_functions=$TAGGED_FUNCTIONS" >> $GITHUB_OUTPUT
+        echo "flat_score=$FLAT_SCORE" >> $GITHUB_OUTPUT
+
+    - name: Generate trust summary
+      run: |
+        TOTAL_FUNCTIONS="${{ steps.results.outputs.total_functions }}"
+        TAGGED_FUNCTIONS="${{ steps.results.outputs.tagged_functions }}"
+        FLAT_SCORE="${{ steps.results.outputs.flat_score }}"
+        EXIT_CODE="${{ steps.aether.outputs.exit_code }}"
+        
+        if [ "$TOTAL_FUNCTIONS" -gt 0 ]; then
+          echo "[aether] PR trust report: $TAGGED_FUNCTIONS/$TOTAL_FUNCTIONS functions tagged"
+          echo "[aether] flat score: $FLAT_SCORE"
+          
+          if [ "$EXIT_CODE" -eq 0 ]; then
+            echo "[aether] flat score: $FLAT_SCORE — PASS"
+          else
+            echo "[aether] flat score: $FLAT_SCORE — BLOCKED"
+            exit 2
+          fi
+        else
+          echo "[aether] No functions found to check"
+        fi
