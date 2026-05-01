@@ -17,6 +17,8 @@ jobs:
             binary-name: aether-cli-linux-x64
           - os: windows-latest
             binary-name: aether-cli-windows-x64.exe
+          - os: macos-latest
+            binary-name: aether-cli-macos-x64
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
@@ -51,6 +53,7 @@ jobs:
           ## Downloads
           - `aether-cli-linux-x64` — Linux x64
           - `aether-cli-windows-x64.exe` — Windows x64
+          - `aether-cli-macos-x64` — macOS x64
 
           ## Install
           cargo install --git https://github.com/webfor1website/aether aether-cli
