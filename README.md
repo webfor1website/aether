@@ -122,10 +122,17 @@ Imported functions bring their provenance with them. Trust scores reflect the fu
 
 ## Interop
 
-Wrap existing Rust libraries with provenance tags:
+Wrap existing libraries with provenance tags:
 
 ```bash
+# Rust
 aether wrap mylib.rs --source "ai" --confidence 0.7
+
+# Python  
+aether wrap mymodule.py --source "ai" --confidence 0.7
+
+# TypeScript
+aether wrap mycomponent.ts --source "ai" --confidence 0.7
 ```
 
 Output (mylib.aeth):
@@ -275,6 +282,7 @@ aether/
 │   ├── aether-discipline/  # Development workflow and session management
 │   ├── aether-format/      # Code formatting
 │   ├── aether-runtime/     # Runtime utilities
+│   ├── aether-server/      # HTTP API — POST /analyze for trust verdicts
 │   └── aether-cli/         # CLI entry point
 ```
 
@@ -365,6 +373,6 @@ CLI flags override policy settings. Use `mode = "report"` for development, `mode
 
 ## Status
 
-v0.1.0 released. CLI, HTTP API, Docker, SARIF output, three-platform binaries, CI integration, .aether-policy.toml. Building toward v1.0: Python/TypeScript wrap support, docs site, crates.io.
+v0.1.0 released. CLI, HTTP API, Docker, SARIF output, three-platform binaries (Linux/Windows/macOS), CI integration, .aether-policy.toml, aether wrap for Rust/Python/TypeScript. Building toward v1.0: docs site, crates.io, VS Code marketplace.
 
 Genius rating: 9.9/10. Ask me in 6 weeks about the gaming problem and the first enterprise pilot.
