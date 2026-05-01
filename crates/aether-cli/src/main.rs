@@ -21,6 +21,8 @@ enum Commands {
         session_id: String,
         #[arg(long)]
         min_trust: Option<f64>,
+        #[arg(long, default_value = "enforce")]
+        mode: String,
     },
     Replay {
         #[arg(short, long)]
@@ -1088,7 +1090,7 @@ fn main() {
             }
         }
 
-        Some(Commands::Run { file, session_id, min_trust }) => {
+        Some(Commands::Run { file, session_id, min_trust, mode }) => {
             // Initialize discipline engine
             let workspace_root = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
             let mut discipline_engine = aether_discipline::DisciplineEngine::new(&workspace_root);
@@ -1098,6 +1100,13 @@ fn main() {
                 cli_min_trust
             } else {
                 policy_config.trust.min_trust
+            };
+            
+            // Use mode from CLI flag or policy config
+            let effective_mode = if mode != "enforce" {
+                mode
+            } else {
+                policy_config.trust.mode.clone()
             };
             
             // Read the file first
@@ -1288,35 +1297,49 @@ for func in &prov_result.typed_ast.program.functions {
                         // Use weighted trust for enforcement (more conservative for deep calls)
                         let trust_score = weighted_trust;
                         
-                        // Enforce trust threshold with interactive review
+                        // Enforce trust threshold with interactive review (only in enforce mode)
                         if trust_score < effective_min_trust {
-                            // Get blocked functions for interactive review
-                            let blocked_functions: Vec<_> = if let Ok(records) = interpreter.store.get_function_records() {
-                                records.iter()
-                                    .filter(|record| record.confidence < effective_min_trust)
-                                    .map(|record| (record.function_name.clone(), record.confidence, record.author.clone(), record.file_path.clone().unwrap_or_else(|| file.display().to_string())))
-                                    .collect()
+                            if effective_mode == "report" {
+                                // Report mode: print warning and continue
+                                eprintln!("[aether] TRUST WARNING: score {:.2} below threshold {:.2} — running anyway (report mode)", trust_score, effective_min_trust);
                             } else {
-                                Vec::new()
-                            };
+                                // Enforce mode: interactive review and potential blocking
+                                // Get blocked functions for interactive review
+                                let blocked_functions: Vec<_> = if let Ok(records) = interpreter.store.get_function_records() {
+                                    records.iter()
+                                        .filter(|record| record.confidence < effective_min_trust)
+                                        .map(|record| (record.function_name.clone(), record.confidence, record.author.clone(), record.file_path.clone().unwrap_or_else(|| file.display().to_string())))
+                                        .collect()
+                                } else {
+                                    Vec::new()
+                                };
 
-                            if !blocked_functions.is_empty() {
-                                let mut should_continue = false;
-                                
-                                for (function_name, confidence, source, file_path) in blocked_functions {
-                                    if !interactive_trust_review(&function_name, confidence, &source, &file_path, &interpreter.store, &file.display().to_string()) {
-                                        // User chose to abort
+                                if !blocked_functions.is_empty() {
+                                    let mut should_continue = false;
+                                    
+                                    for (function_name, confidence, source, file_path) in blocked_functions {
+                                        if !interactive_trust_review(&function_name, confidence, &source, &file_path, &interpreter.store, &file.display().to_string()) {
+                                            // User chose to abort
+                                            std::process::exit(2);
+                                        }
+                                        // User chose to override or quarantine, continue to next function
+                                        should_continue = true;
+                                    }
+                                    
+                                    if should_continue {
+                                        // Continue execution after overrides
+                                        eprintln!("[aether] continuing with overrides...");
+                                    } else {
+                                        // All functions were quarantined, still block
+                                        if (weighted_trust - flat_trust).abs() > 0.01 {
+                                            eprintln!("[aether] blocked — trust score {:.2} (weighted) / {:.2} (flat) is below minimum {:.2}", weighted_trust, flat_trust, effective_min_trust);
+                                        } else {
+                                            eprintln!("[aether] blocked — trust score {:.2} is below minimum {:.2}", trust_score, effective_min_trust);
+                                        }
                                         std::process::exit(2);
                                     }
-                                    // User chose to override or quarantine, continue to next function
-                                    should_continue = true;
-                                }
-                                
-                                if should_continue {
-                                    // Continue execution after overrides
-                                    eprintln!("[aether] continuing with overrides...");
                                 } else {
-                                    // All functions were quarantined, still block
+                                    // No blocked functions found, but trust score is still low
                                     if (weighted_trust - flat_trust).abs() > 0.01 {
                                         eprintln!("[aether] blocked — trust score {:.2} (weighted) / {:.2} (flat) is below minimum {:.2}", weighted_trust, flat_trust, effective_min_trust);
                                     } else {
@@ -1324,14 +1347,6 @@ for func in &prov_result.typed_ast.program.functions {
                                     }
                                     std::process::exit(2);
                                 }
-                            } else {
-                                // No blocked functions found, but trust score is still low
-                                if (weighted_trust - flat_trust).abs() > 0.01 {
-                                    eprintln!("[aether] blocked — trust score {:.2} (weighted) / {:.2} (flat) is below minimum {:.2}", weighted_trust, flat_trust, effective_min_trust);
-                                } else {
-                                    eprintln!("[aether] blocked — trust score {:.2} is below minimum {:.2}", trust_score, effective_min_trust);
-                                }
-                                std::process::exit(2);
                             }
                         }
                         match result.kind {

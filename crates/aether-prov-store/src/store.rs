@@ -1,4 +1,4 @@
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, params, OptionalExtension};
 use thiserror::Error;
 use crate::schema::SCHEMA;
 use aether_ir::expr::ProvId;
@@ -141,15 +141,26 @@ impl ProvStore {
 
     /// Record a function call with call depth for weighted trust scoring
     pub fn record_function_call(&self, function_name: &str, call_depth: usize) -> StoreResult<()> {
-        // Update the call depth for the most recent call to this function in the current session
-        self.conn.execute(
-            r#"UPDATE prov_entries 
-               SET call_depth = ?1 
-               WHERE session_id = ?2 AND function_name = ?3
+        // First, find the most recent entry for this function in the current session
+        let id: Option<i64> = self.conn.query_row(
+            r#"SELECT id FROM prov_entries 
+               WHERE session_id = ?1 AND function_name = ?2
                ORDER BY id DESC 
                LIMIT 1"#,
-            params![call_depth as i64, self.session_id, function_name],
-        )?;
+            params![self.session_id, function_name],
+            |row| row.get(0),
+        ).optional()?;
+        
+        // If we found an entry, update its call depth
+        if let Some(target_id) = id {
+            self.conn.execute(
+                r#"UPDATE prov_entries 
+                   SET call_depth = ?1 
+                   WHERE id = ?2"#,
+                params![call_depth as i64, target_id],
+            )?;
+        }
+        
         Ok(())
     }
 
