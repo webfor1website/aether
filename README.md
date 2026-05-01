@@ -299,6 +299,22 @@ Or install from source:
 
 ---
 
+## Docker
+
+```bash
+docker build -t aether-server .
+docker run -p 3000:3000 aether-server
+```
+
+With custom trust threshold via policy:
+```bash
+docker run -p 3000:3000 \
+  -v $(pwd)/.aether-policy.toml:/app/.aether-policy.toml \
+  aether-server
+```
+
+---
+
 ## Status
 
 Core pipeline solid. Multi-file imports. Trust evolution. Weighted scoring by call depth. LSP with live hover. VS Code extension. Interop via aether wrap. Extern fn runtime support.
