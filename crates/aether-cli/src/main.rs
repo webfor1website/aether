@@ -45,6 +45,8 @@ enum Commands {
     },
     Report {
         path: PathBuf,
+        #[arg(long, default_value = "text")]
+        format: String,
     },
 }
 
@@ -272,7 +274,13 @@ fn find_function_line_number(file_path: &str, function_name: &str) -> Option<usi
     None
 }
 
-fn generate_provenance_report(path: &std::path::Path) {
+fn generate_provenance_report(path: &std::path::Path, format: &str, policy_config: &PolicyConfig) {
+    // If SARIF format requested, delegate to SARIF function
+    if format == "sarif" {
+        generate_sarif_report(&path.to_path_buf(), policy_config);
+        return;
+    }
+    
     let mut all_functions = Vec::new();
     
     // Check if path is a file or directory
@@ -1478,8 +1486,18 @@ for func in &prov_result.typed_ast.program.functions {
             }
         }
 
-        Some(Commands::Report { path }) => {
-            generate_provenance_report(&path);
+        Some(Commands::Report { path, format }) => {
+            // Use CLI format or fall back to policy config
+            let output_format = if format != "text" {
+                format
+            } else {
+                policy_config.output.format.clone()
+            };
+            
+            match output_format.as_str() {
+                "sarif" => generate_sarif_report(&path, &policy_config),
+                _ => generate_provenance_report(&path, &output_format, &policy_config),
+            }
             
             // Check trust threshold from policy if in enforce mode
             if policy_config.trust.mode == "enforce" {
@@ -1494,4 +1512,140 @@ for func in &prov_result.typed_ast.program.functions {
             std::process::exit(1);
         }
     }
+}
+
+
+fn generate_sarif_report(path: &PathBuf, policy_config: &PolicyConfig) {
+    let content = match std::fs::read_to_string(path) {
+        Ok(content) => content,
+        Err(e) => {
+            eprintln!("Error reading file {}: {}", path.display(), e);
+            std::process::exit(1);
+        }
+    };
+
+    let parsed = aether_parser::parse(&content);
+    if !parsed.errors.is_empty() {
+        eprintln!("Parse errors in {}:", path.display());
+        for error in &parsed.errors {
+            eprintln!("  {}", error);
+        }
+        std::process::exit(1);
+    }
+
+    let name_result = aether_checker::resolve_names(&parsed);
+    if !name_result.errors.is_empty() {
+        eprintln!("Name resolution errors in {}:", path.display());
+        for error in &name_result.errors {
+            eprintln!("  {}", error);
+        }
+        std::process::exit(1);
+    }
+
+    let type_result = aether_checker::infer_types(&name_result.resolved_ast);
+    if !type_result.errors.is_empty() {
+        eprintln!("Type checking errors in {}:", path.display());
+        for error in &type_result.errors {
+            eprintln!("  {}", error);
+        }
+        std::process::exit(1);
+    }
+
+    use serde_json::json;
+
+    let mut results = Vec::new();
+
+    for function in &type_result.typed_ast.program.functions {
+        if function.name == "main" {
+            continue; // Skip main - it's infrastructure
+        }
+
+        let (source, confidence) = if let Some(prov_tag) = &function.provenance {
+            let source_str = match &prov_tag.author {
+                aether_core::AuthorType::Human => "user".to_string(),
+                aether_core::AuthorType::AI(model) => model.clone(),
+                aether_core::AuthorType::Transform(pass) => format!("transform:{}", pass),
+            };
+            (source_str, prov_tag.confidence)
+        } else {
+            ("unknown".to_string(), 0.0)
+        };
+
+        // Generate SARIF results for low-trust or untagged functions
+        let should_report = confidence < policy_config.trust.min_trust || confidence < 0.8 || confidence == 0.0;
+        
+        if should_report {
+            let rule_id = if confidence == 0.0 {
+                "AETHER002" // Untagged function
+            } else {
+                "AETHER001" // Low trust function
+            };
+
+            let level = if confidence < policy_config.trust.min_trust {
+                "error"
+            } else if confidence < 0.8 {
+                "warning"
+            } else {
+                "note"
+            };
+
+            let message = if confidence == 0.0 {
+                format!("{}: no @prov tag — silence = zero trust", function.name)
+            } else {
+                format!("{}: trust {:.2} (source: {}) — below threshold", function.name, confidence, source)
+            };
+
+            let result = json!({
+                "ruleId": rule_id,
+                "level": level,
+                "message": {
+                    "text": message
+                },
+                "locations": [{
+                    "physicalLocation": {
+                        "artifactLocation": {
+                            "uri": path.to_string_lossy()
+                        },
+                        "region": {
+                            "startLine": 1
+                        }
+                    }
+                }]
+            });
+
+            results.push(result);
+        }
+    }
+
+    let sarif_report = json!({
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [{
+            "tool": {
+                "driver": {
+                    "name": "aether",
+                    "version": "0.1.0",
+                    "rules": [
+                        {
+                            "id": "AETHER001",
+                            "name": "LowTrustFunction",
+                            "shortDescription": {
+                                "text": "Function has low provenance trust score"
+                            }
+                        },
+                        {
+                            "id": "AETHER002",
+                            "name": "UntaggedFunction",
+                            "shortDescription": {
+                                "text": "Function has no @prov tag — silence = zero trust"
+                            }
+                        }
+                    ]
+                }
+            },
+            "results": results
+        }]
+    });
+
+    println!("{}", serde_json::to_string_pretty(&sarif_report).unwrap());
 }
