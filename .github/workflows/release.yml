@@ -10,7 +10,14 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary-name: aether-cli-linux-x64
+          - os: windows-latest
+            binary-name: aether-cli-windows-x64.exe
+    runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -24,13 +31,18 @@ jobs:
       run: cargo build --release --bin aether-cli
 
     - name: Prepare binary
+      shell: bash
       run: |
-        cp target/release/aether-cli aether-cli-linux-x64
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          cp target/release/aether-cli.exe ${{ matrix.binary-name }}
+        else
+          cp target/release/aether-cli ${{ matrix.binary-name }}
+        fi
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          aether-cli-linux-x64
+          ${{ matrix.binary-name }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
