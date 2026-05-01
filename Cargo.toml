@@ -11,6 +11,7 @@ members = [
     "crates/aether-lsp",
     "crates/aether-cli",
     "crates/aether-discipline",
+    "crates/aether-server",
     "tests/fuzz",
 ]
 resolver = "2"
@@ -43,6 +44,10 @@ rusqlite = { version = "0.28", features = ["bundled"] }
 lsp-types = "0.95"
 tokio = { version = "1.0", features = ["full"] }
 futures = "0.3"
+
+# HTTP server dependencies
+axum = "0.7"
+tower = "0.4"
 
 # CLI dependencies
 clap = { version = "4.4", features = ["derive"] }

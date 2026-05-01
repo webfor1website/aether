@@ -1,0 +1,20 @@
+[package]
+name = "aether-server"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Aether core crates
+aether-core = { path = "../aether-core" }
+aether-parser = { path = "../aether-parser" }
+aether-checker = { path = "../aether-checker" }
+
+# HTTP server
+axum = { workspace = true }
+tokio = { workspace = true }
+tower = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }

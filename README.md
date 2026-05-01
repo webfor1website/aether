@@ -285,9 +285,17 @@ Add Aether trust checks to your CI pipeline:
 
 ## Releases
 
-```bash
-cargo install --git https://github.com/webfor1website/aether aether-cli
-```
+Download the latest binary from the 
+[releases page](https://github.com/webfor1website/aether/releases):
+
+| Platform | Binary |
+|----------|--------|
+| Linux x64 | `aether-cli-linux-x64` |
+| Windows x64 | `aether-cli-windows-x64.exe` |
+| macOS x64 | `aether-cli-macos-x64` |
+
+Or install from source:
+  cargo install --git https://github.com/webfor1website/aether aether-cli
 
 ---
 
