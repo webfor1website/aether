@@ -2,18 +2,16 @@ name: Aether Trust Check
 description: 'Check trust scores for AI-generated code using Aether provenance tracking'
 
 on:
-  pull_request:
-    branches: [ main ]
-
-inputs:
-  source-dir:
-    description: 'Source directory to check'
-    required: false
-    default: '.'
-  min-trust:
-    description: 'Minimum trust threshold (0.0-1.0)'
-    required: false
-    default: '0.0'
+  workflow_call:
+    inputs:
+      source-dir:
+        required: false
+        type: string
+        default: '.'
+      min-trust:
+        required: false
+        type: string
+        default: '0.0'
 
 jobs:
   aether-check:
