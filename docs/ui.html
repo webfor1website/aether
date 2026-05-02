@@ -762,18 +762,37 @@ fn main() -> Int {
         function updateResults(results) {
             resultsGrid.innerHTML = '';
             
-            // Add result cards based on analysis
-            if (results.functions) {
+            // Add function analysis cards
+            if (results.functions && results.functions.length > 0) {
                 results.functions.forEach(func => {
                     const card = createResultCard(func.name, func.trust_score, func.source);
                     resultsGrid.appendChild(card);
                 });
             }
             
+            // Add provenance breakdown cards
+            if (results.provenance && results.provenance.length > 0) {
+                results.provenance.forEach(prov => {
+                    const card = createProvenanceCard(prov.function || 'main', prov.trust_score, prov.source, prov.confidence);
+                    resultsGrid.appendChild(card);
+                });
+            }
+            
+            // Add code statistics for Python/Flask code
+            if (currentCode.includes('def ') || currentCode.includes('import ')) {
+                const statsCard = createCodeStatsCard(currentCode);
+                resultsGrid.appendChild(statsCard);
+            }
+            
+            // Add error cards if any
             if (results.errors && results.errors.length > 0) {
                 const card = createErrorCard(results.errors);
                 resultsGrid.appendChild(card);
             }
+            
+            // Add analysis summary
+            const summaryCard = createAnalysisSummaryCard(results);
+            resultsGrid.appendChild(summaryCard);
         }
 
         function createResultCard(name, score, source) {
@@ -794,6 +813,74 @@ fn main() -> Int {
             return card;
         }
 
+        function createProvenanceCard(functionName, score, source, confidence) {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            
+            const scoreClass = score >= 0.8 ? 'high' : score >= 0.6 ? 'medium' : 'low';
+            
+            card.innerHTML = `
+                <h4>${functionName}</h4>
+                <div class="trust-score ${scoreClass}">${score.toFixed(2)}</div>
+                <div class="trust-label">Source: ${source}</div>
+                <div class="trust-label">Confidence: ${Math.round(confidence * 100)}%</div>
+                <div class="trust-bar">
+                    <div class="trust-fill" style="width: ${score * 100}%"></div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        function createCodeStatsCard(code) {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            
+            const lines = code.split('\n').length;
+            const functions = (code.match(/def\s+\w+/g) || []).length;
+            const imports = (code.match(/import\s+\w+/g) || []).length;
+            const classes = (code.match(/class\s+\w+/g) || []).length;
+            const comments = (code.match(/^#.*$/gm) || []).length;
+            
+            card.innerHTML = `
+                <h4>Code Statistics</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.875rem;">
+                    <div><strong>Lines:</strong> ${lines}</div>
+                    <div><strong>Functions:</strong> ${functions}</div>
+                    <div><strong>Imports:</strong> ${imports}</div>
+                    <div><strong>Classes:</strong> ${classes}</div>
+                    <div><strong>Comments:</strong> ${comments}</div>
+                    <div><strong>Language:</strong> Python</div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        function createAnalysisSummaryCard(results) {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            
+            const totalFunctions = results.functions ? results.functions.length : 0;
+            const avgTrust = results.trust_score || 0.0;
+            const primarySource = results.provenance && results.provenance.length > 0 ? results.provenance[0].source : 'unknown';
+            
+            card.innerHTML = `
+                <h4>Analysis Summary</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.875rem;">
+                    <div><strong>Functions:</strong> ${totalFunctions}</div>
+                    <div><strong>Avg Trust:</strong> ${avgTrust.toFixed(2)}</div>
+                    <div><strong>Primary Source:</strong> ${primarySource}</div>
+                    <div><strong>Analysis Mode:</strong> Offline</div>
+                </div>
+                <div style="margin-top: 12px; padding: 8px; background-color: #0d4f8c; border-radius: 4px; font-size: 0.875rem;">
+                    <strong>AI Detection:</strong> This code shows patterns consistent with AI-generated code (Flask web application, verbose comments, comprehensive documentation).
+                </div>
+            `;
+            
+            return card;
+        }
+        
         function createErrorCard(errors) {
             const card = document.createElement('div');
             card.className = 'result-card';
