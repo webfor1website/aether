@@ -171,13 +171,25 @@ Now every run enforces the threshold without a CLI flag. Commit it. Make it poli
 
 ## Installation
 
-Requires Rust toolchain.
+### Download binary (recommended)
+Download the latest binary from the [releases page](https://github.com/webfor1website/aether/releases):
 
+| Platform | Binary |
+|----------|--------|
+| Linux x64 | `aether-cli-linux-x64` |
+| Windows x64 | `aether-cli-windows-x64.exe` |
+| macOS x64 | `aether-cli-macos-x64` |
+
+### Build from source
+Requires Rust toolchain:
 ```bash
-git clone https://github.com/yourname/aether
+git clone https://github.com/webfor1website/aether
 cd aether
-cargo build --bin aether-cli
+cargo build --release --bin aether-cli
 ```
+
+Note: crates.io publish coming in a future release once 
+all workspace crates are individually versioned.
 
 ---
 

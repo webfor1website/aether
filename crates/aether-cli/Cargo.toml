@@ -3,10 +3,7 @@ name = "aether-cli"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
-license.workspace = true
 rust-version.workspace = true
-homepage.workspace = true
-repository.workspace = true
 documentation.workspace = true
 description = "Provenance-first programming language CLI — trust enforcement for AI-generated code"
 license = "MIT OR Apache-2.0"
@@ -14,19 +11,18 @@ repository = "https://github.com/webfor1website/aether"
 homepage = "https://github.com/webfor1website/aether"
 keywords = ["provenance", "trust", "ai", "governance", "cli"]
 categories = ["command-line-utilities", "development-tools"]
-edition = "2021"
 
 [dependencies]
-aether-core = { path = "../aether-core" }
-aether-parser = { path = "../aether-parser" }
-aether-checker = { path = "../aether-checker" }
-aether-runtime = { path = "../aether-runtime" }
-aether-format = { path = "../aether-format" }
-aether-prov = { path = "../aether-prov" }
-aether-ir = { path = "../aether-ir" }
-aether-interp = { path = "../aether-interp" }
-aether-prov-store = { path = "../aether-prov-store" }
-aether-discipline = { path = "../aether-discipline" }
+aether-core = { path = "../aether-core", version = "0.1.0" }
+aether-parser = { path = "../aether-parser", version = "0.1.0" }
+aether-checker = { path = "../aether-checker", version = "0.1.0" }
+aether-runtime = { path = "../aether-runtime", version = "0.1.0" }
+aether-format = { path = "../aether-format", version = "0.1.0" }
+aether-prov = { path = "../aether-prov", version = "0.1.0" }
+aether-ir = { path = "../aether-ir", version = "0.1.0" }
+aether-interp = { path = "../aether-interp", version = "0.1.0" }
+aether-prov-store = { path = "../aether-prov-store", version = "0.1.0" }
+aether-discipline = { path = "../aether-discipline", version = "0.1.0" }
 clap = { version = "4.0", features = ["derive"] }
 similar = "2.0"
 serde_json = "1"
