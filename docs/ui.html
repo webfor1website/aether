@@ -929,10 +929,38 @@ fn main() -> Int {
             }
             
             // Grok indicators
-            if (lowerCode.includes('grok') || lowerCode.includes('x.ai')) {
-                probabilities.grok += 0.20;
+            if (lowerCode.includes('grok') || lowerCode.includes('x.ai') || 
+                lowerCode.includes('elon') || lowerCode.includes('musk') ||
+                lowerCode.includes('ass') || lowerCode.includes('blaster') ||
+                lowerCode.includes('meme') || lowerCode.includes('3000')) {
+                probabilities.grok += 0.35;
+                probabilities.user -= 0.15;
+                probabilities.ai -= 0.20;
+            }
+            
+            // Grok-specific humor patterns
+            const grokPatterns = [
+                /💰|💦|🔫|💣|🚀/,  // Emoji patterns (Grok loves emojis)
+                /(?:elon|musk|tesla|spacex)/i,  // Elon-related content
+                /(?:ass|butt|booty)/i,  // Grok's signature humor
+                /(?:blaster|shot|gun)/i,  // Aggressive/violent themes
+                /(?:meme|dank|funny)/i,  // Meme culture
+                /(?:3000|9000|420)/i,  // Number patterns
+                /print\(["'][^"']*💰[^"']*["']/,  // Emoji in print statements
+                /print\(["'][^"']*ASS[^"']*["']/i,  // ASS in print statements
+            ];
+            
+            let grokScore = 0;
+            grokPatterns.forEach(pattern => {
+                if (pattern.test(code)) grokScore++;
+            });
+            
+            if (grokScore >= 2) {
+                probabilities.grok += 0.30;
                 probabilities.user -= 0.10;
-                probabilities.ai -= 0.10;
+                probabilities.ai -= 0.15;
+                probabilities.claude -= 0.03;
+                probabilities.cursor -= 0.02;
             }
             
             // Generic AI patterns
