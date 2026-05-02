@@ -583,7 +583,7 @@ fn main() -> Int {
             fileUpload.addEventListener('click', () => {
                 const input = document.createElement('input');
                 input.type = 'file';
-                input.accept = '.ae,.aeth,.rs,.py,.ts';
+                input.accept = '.ae,.aeth,.rs,.py,.ts,.js,.css,.html,.json,.md';
                 input.onchange = (e) => handleFileUpload(e.target.files[0]);
                 input.click();
             });
@@ -923,31 +923,34 @@ fn main() -> Int {
             
             // Cursor AI assistant patterns (my specific code signatures)
             const cursorPatterns = [
-                /\/\* Core Styles for [\w\s]+ \*\//,  // My CSS comment style
-                /:root\s*\{[^}]*--primary-color:/,  // CSS variable patterns I use
-                /class\s+\w+Controller\s*\{/,  // My class naming convention
-                /constructor\(\)\s*\{\s*this\./,  // My constructor pattern
-                /this\.\w+\s*=\s*this\.load\w+\(\)/,  // My data loading pattern
-                /this\.init\(\)/,  // My initialization pattern
-                /setupEventListeners\(\)/,  // My method naming
-                /document\.querySelectorAll\('\.\w+-btn'\)/,  // My selector patterns
-                /e\.currentTarget\.dataset\.\w+/,  // My event handling
-                /switch\s*\(\w+\)\s*\{\s*case\s*'/,  // My switch statement style
-                /localStorage\.getItem\('\w+-\w+'\)/,  // My storage pattern
-                /JSON\.parse\(saved\)/,  // My JSON handling
-                /const\s+\w+\s*=\s*saved\s*\?/,  // My conditional pattern
-                /template\s+literal/,  // My template literal usage
-                /\.map\(\w+\s*=>\s*`\$\{/,  // My template mapping
+                /class\s+\w+Tracker\s*\{/,  // My class naming convention
+                /constructor\(app\)\s*\{/,  // My constructor pattern with app parameter
+                /this\.app\s*=\s*app/,  // My app assignment pattern
+                /this\.\w+\s*=\s*null/,  // My null initialization pattern
+                /this\.\w+\s*=\s*\[\]/,  // My array initialization pattern
+                /this\.\w+\s*=\s*\{/,  // My object initialization pattern
+                /start\w+\(\)\s*\{/,  // My method naming pattern
+                /stop\w+\(\)\s*\{/,  // My method naming pattern
+                /update\w+\(\)\s*\{/,  // My method naming pattern
+                /handle\w+\(\)\s*\{/,  // My method naming pattern
+                /calculate\w+\(\)\s*\{/,  // My method naming pattern
+                /const\s+now\s*=\s*Date\.now\(\)/,  // My Date.now pattern
+                /const\s+\w+\s*=\s*this\.\w+/,  // My property access pattern
+                /if\s*\(\w+\.length\s*<\s*\d+\)\s*return/,  // My length check pattern
+                /\.forEach\(\w+\s*=>\s*\{/,  // My forEach pattern
+                /\.reduce\(\(sum,\s*\w+\)\s*=>/,  // My reduce pattern
                 /Math\.max\(0,\s*Math\.min\(/,  // My Math pattern
+                /Math\.round\(/,  // My Math.round pattern
                 /new Date\(\)\.toISOString\(\)/,  // My date handling
-                /requestNotificationPermission\(\)/,  // My notification pattern
-                /showNotification\('\w+',/,  // My notification method
-                /exportAllData\(\)/,  // My export method naming
-                /clearAllData\(\)/,  // My clear method naming
-                /handleKeyboardShortcuts\(\)/,  // My method naming
-                /visibilitychange/,  // My visibility API usage
-                /beforeunload/,  // My beforeunload usage
-                /DOMContentLoaded/,  // My DOM ready usage
+                /document\.addEventListener\(/,  // My event listener pattern
+                /document\.querySelector\(/,  // My querySelector pattern
+                /setInterval\(/,  // My interval pattern
+                /clearInterval\(/,  // My clearInterval pattern
+                /audioContext\s*=\s*new\s*\(/,  // My Web Audio API pattern
+                /oscillator\.connect\(/,  // My audio pattern
+                /gainNode\.gain\.setValueAtTime\(/,  // My audio gain pattern
+                /module\.exports/,  // My export pattern
+                /typeof\s+module/,  // my module check pattern
             ];
             
             let cursorScore = 0;
