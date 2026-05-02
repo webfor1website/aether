@@ -55,6 +55,7 @@ enum Commands {
         #[arg(default_value = ".")]
         name: String,
     },
+    Dev,
 }
 
 /// Policy configuration loaded from .aether-policy.toml
@@ -1536,6 +1537,151 @@ fn map_rust_type_to_aether(rust_type: &str) -> String {
     }
 }
 
+fn run_file_with_clear(file: &std::path::Path, policy_config: &PolicyConfig) {
+    // Clear terminal
+    print!("\x1B[2J\x1B[1;1H");
+    println!("[aether] file changed: {} — re-running...", file.display());
+    
+    // Run the file using the same logic as the Run command
+    let session_id = "dev".to_string();
+    let effective_min_trust = policy_config.trust.min_trust;
+    let effective_mode = policy_config.trust.mode.clone();
+    
+    // Read the file
+    let content = match std::fs::read_to_string(file) {
+        Ok(content) => content,
+        Err(e) => {
+            eprintln!("Error reading file {}: {}", file.display(), e);
+            return;
+        }
+    };
+    
+    // Parse the file
+    let parsed = aether_parser::parse(&content);
+    if !parsed.errors.is_empty() {
+        eprintln!("Parse errors in {}:", file.display());
+        for error in &parsed.errors {
+            eprintln!("  {}", error);
+        }
+        return;
+    }
+    
+    // Resolve imports before running the checker
+    let mut resolved_program = parsed.ast.clone();
+    let mut imports_to_remove = Vec::new();
+    let mut import_paths = Vec::new();
+    
+    // Collect import statements from the main program
+    for (stmt_idx, stmt) in resolved_program.statements.iter().enumerate() {
+        if let aether_core::Stmt::Import(import_stmt) = stmt {
+            imports_to_remove.push(stmt_idx);
+            
+            // Resolve path relative to the file being run
+            let file_dir = file.parent().unwrap_or_else(|| std::path::Path::new("."));
+            let import_path = file_dir.join(&import_stmt.path);
+            import_paths.push(import_path);
+        }
+    }
+    
+    // Process each import
+    for import_path in import_paths {
+        // Read and parse the imported file
+        if let Ok(import_content) = std::fs::read_to_string(&import_path) {
+            let import_parsed = aether_parser::parse(&import_content);
+            if import_parsed.errors.is_empty() {
+                // Merge functions from imported file
+                resolved_program.functions.extend(import_parsed.ast.functions.into_iter().filter(|f| f.name != "main"));
+            } else {
+                eprintln!("Parse errors in imported file {}:", import_path.display());
+                for error in &import_parsed.errors {
+                    eprintln!("  {}", error);
+                }
+                return;
+            }
+        } else {
+            eprintln!("Error reading imported file {}: {}", import_path.display(), std::io::Error::last_os_error());
+            return;
+        }
+    }
+    
+    // Remove import statements from the main program
+    for &stmt_idx in imports_to_remove.iter().rev() {
+        if stmt_idx < resolved_program.statements.len() {
+            resolved_program.statements.remove(stmt_idx);
+        }
+    }
+    
+    // Run the full checker pipeline
+    let check_result = aether_checker::resolve_names(&aether_parser::ParseResult {
+        ast: resolved_program,
+        errors: Vec::new(),
+        provenance_hints: Vec::new(),
+    });
+    if !check_result.errors.is_empty() {
+        eprintln!("Name resolution errors in {}:", file.display());
+        for error in &check_result.errors {
+            eprintln!("  {}", error);
+        }
+        return;
+    }
+    
+    let type_result = aether_checker::infer_types(&check_result.resolved_ast);
+    if !type_result.errors.is_empty() {
+        eprintln!("Type inference errors in {}:", file.display());
+        for error in &type_result.errors {
+            eprintln!("  {}", error);
+        }
+        return;
+    }
+    
+    // Initialize interpreter with store
+    let db_path = ".aether-prov.db";
+    let file_path_str = file.to_string_lossy();
+    let store = match aether_prov_store::ProvStore::open(db_path, session_id.clone()) {
+        Ok(store) => store,
+        Err(e) => {
+            eprintln!("Error opening store: {}", e);
+            return;
+        }
+    };
+    let mut interpreter = aether_interp::Interpreter::new(store);
+    
+    // Set up session
+    if let Err(e) = interpreter.store.begin_session(&file_path_str) {
+        eprintln!("Error setting up session: {}", e);
+        return;
+    }
+    
+    // Run the program
+    let result = interpreter.run_main(&file_path_str);
+    
+    match result {
+        Ok((value, trust_score, weighted_trust)) => {
+            // Show both scores when they differ
+            if (weighted_trust - trust_score).abs() > 0.01 {
+                println!("  final trust score: {:.2} (weighted) / {:.2} (flat)", weighted_trust, trust_score);
+            } else {
+                println!("  final trust score: {:.2}", weighted_trust);
+            }
+            
+            // Show the result value
+            match value.kind {
+                aether_interp::value::ValueKind::Unit => println!("Result: ()"),
+                aether_interp::value::ValueKind::Int(i) => println!("Result: {}", i),
+                aether_interp::value::ValueKind::Float(f) => println!("Result: {}", f),
+                aether_interp::value::ValueKind::Bool(b) => println!("Result: {}", b),
+                aether_interp::value::ValueKind::Str(s) => println!("Result: {}", s),
+                aether_interp::value::ValueKind::Struct { .. } => println!("Result: Struct"),
+                aether_interp::value::ValueKind::Function(_) => println!("Result: Function"),
+                aether_interp::value::ValueKind::Builtin(_) => println!("Result: Builtin"),
+            }
+        }
+        Err(e) => {
+            eprintln!("Runtime error: {}", e);
+        }
+    }
+}
+
 fn main() {
     let workspace_root = std::env::current_dir()
         .unwrap_or_else(|_| std::path::PathBuf::from("."));
@@ -2170,6 +2316,89 @@ format = "text"
             }
             
             println!("[aether] run: aether run --session-id dev main.ae");
+        }
+
+        Some(Commands::Dev) => {
+            use notify::{Watcher, RecursiveMode, RecommendedWatcher, Config};
+            use notify::event::{Event, EventKind};
+            use std::sync::mpsc;
+            use std::thread;
+            use std::time::Duration;
+            
+            println!("[aether] watching for changes... (Ctrl+C to stop)");
+            
+            // Get current directory
+            let current_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+            
+            // Set up file watcher
+            let (tx, rx) = mpsc::channel();
+            let mut watcher: RecommendedWatcher = Watcher::new(
+                move |res: Result<Event, notify::Error>| {
+                    if let Ok(event) = res {
+                        let _ = tx.send(event);
+                    }
+                },
+                Config::default(),
+            ).unwrap();
+            
+            // Watch current directory recursively
+            if let Err(e) = watcher.watch(&current_dir, RecursiveMode::Recursive) {
+                eprintln!("Error setting up file watcher: {}", e);
+                std::process::exit(1);
+            }
+            
+            // Find the initial .ae or .aeth file to run
+            let mut current_file = None;
+            if let Ok(entries) = std::fs::read_dir(&current_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() {
+                        if let Some(extension) = path.extension() {
+                            let extension_str = extension.to_string_lossy();
+                            if extension_str == "ae" || extension_str == "aeth" {
+                                current_file = Some(path);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // If no file found, look for main.ae
+            if current_file.is_none() {
+                let main_ae = current_dir.join("main.ae");
+                if main_ae.exists() {
+                    current_file = Some(main_ae);
+                }
+            }
+            
+            // Run the initial file if found
+            if let Some(ref file) = current_file {
+                run_file_with_clear(file, &policy_config);
+            }
+            
+            // Watch for file changes
+            loop {
+                match rx.recv() {
+                    Ok(event) => {
+                        if let EventKind::Modify(_) = event.kind {
+                            if let Some(path) = event.paths.first() {
+                                if let Some(extension) = path.extension() {
+                                    let extension_str = extension.to_string_lossy();
+                                    if extension_str == "ae" || extension_str == "aeth" {
+                                        // Clear terminal and run the file
+                                        run_file_with_clear(path, &policy_config);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Error watching files: {}", e);
+                        break;
+                    }
+                }
+            }
         }
 
         None => {
