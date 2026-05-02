@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aether UI - Trust Analysis for AI-Generated Code</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            padding: 20px 0;
+            border-bottom: 1px solid #21262d;
+            background-color: #161b22;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #58a6ff;
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            background-color: #161b22;
+            border: 1px solid #30363d;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #f85149;
+        }
+
+        .status-indicator.online {
+            background-color: #3fb950;
+        }
+
+        main {
+            padding: 40px 0;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .editor-panel {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .editor-header {
+            padding: 16px;
+            background-color: #21262d;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .editor-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tab {
+            padding: 6px 12px;
+            border-radius: 6px;
+            background-color: transparent;
+            border: none;
+            color: #8b949e;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            background-color: #1f6feb;
+            color: white;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            background-color: #21262d;
+            color: #c9d1d9;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #30363d;
+        }
+
+        .btn.primary {
+            background-color: #1f6feb;
+            border-color: #1f6feb;
+            color: white;
+        }
+
+        .btn.primary:hover {
+            background-color: #2c7fdb;
+        }
+
+        .code-editor {
+            padding: 16px;
+            min-height: 400px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            background-color: #0d1117;
+            border: none;
+            outline: none;
+            resize: vertical;
+            color: #c9d1d9;
+            width: 100%;
+        }
+
+        .analysis-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .trust-score-card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .trust-score {
+            font-size: 3rem;
+            font-weight: 600;
+            margin: 16px 0;
+        }
+
+        .trust-score.high {
+            color: #3fb950;
+        }
+
+        .trust-score.medium {
+            color: #d29922;
+        }
+
+        .trust-score.low {
+            color: #f85149;
+        }
+
+        .trust-label {
+            font-size: 0.875rem;
+            color: #8b949e;
+            margin-bottom: 8px;
+        }
+
+        .trust-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #30363d;
+        }
+
+        .trust-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+        }
+
+        .trust-bar {
+            height: 4px;
+            background-color: #30363d;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .trust-fill {
+            height: 100%;
+            background-color: #1f6feb;
+            transition: width 0.3s ease;
+        }
+
+        .provenance-card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .provenance-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .provenance-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background-color: #0d1117;
+            border-radius: 6px;
+        }
+
+        .provenance-source {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .source.user {
+            background-color: #3fb950;
+            color: white;
+        }
+
+        .source.claude {
+            background-color: #1f6feb;
+            color: white;
+        }
+
+        .source.cursor {
+            background-color: #79c0ff;
+            color: #0d1117;
+        }
+
+        .source.grok {
+            background-color: #d29922;
+            color: white;
+        }
+
+        .source.ai {
+            background-color: #8b949e;
+            color: white;
+        }
+
+        .provenance-confidence {
+            margin-left: auto;
+            font-size: 0.875rem;
+            color: #8b949e;
+        }
+
+        .policy-card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .policy-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            color: #8b949e;
+        }
+
+        .form-input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+
+        .form-select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-size: 14px;
+        }
+
+        .results-section {
+            margin-top: 40px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .result-card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .file-upload {
+            border: 2px dashed #30363d;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 24px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .file-upload:hover {
+            border-color: #1f6feb;
+        }
+
+        .file-upload.dragover {
+            border-color: #1f6feb;
+            background-color: #0d4f8c;
+        }
+
+        .error-message {
+            background-color: #2d1a1a;
+            border: 1px solid #f85149;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 16px;
+            color: #ff7b72;
+        }
+
+        .success-message {
+            background-color: #1a2d1a;
+            border: 1px solid #3fb950;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 16px;
+            color: #7ee83f;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #8b949e;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #30363d;
+            border-top: 2px solid #1f6feb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1024px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+            
+            .analysis-panel {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .workspace {
+                gap: 16px;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">Aether UI</div>
+                <div class="server-status">
+                    <div class="status-indicator" id="statusIndicator"></div>
+                    <span id="statusText">Connecting...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="file-upload" id="fileUpload">
+                <div>
+                    <h3>Drop files here or click to upload</h3>
+                    <p>Supports .ae, .aeth, .rs, .py, .ts files</p>
+                </div>
+            </div>
+
+            <div class="workspace">
+                <div class="editor-panel">
+                    <div class="editor-header">
+                        <div class="editor-tabs">
+                            <button class="tab active" data-tab="code">Code</button>
+                            <button class="tab" data-tab="analysis">Analysis</button>
+                        </div>
+                        <div class="editor-actions">
+                            <button class="btn" id="clearBtn">Clear</button>
+                            <button class="btn primary" id="analyzeBtn">Analyze</button>
+                        </div>
+                    </div>
+                    <textarea class="code-editor" id="codeEditor" placeholder="// Enter your Aether code here or upload a file...
+
+@prov(source: \"user\", confidence: 1.0)
+fn main() -> Int {
+  42
+}"></textarea>
+                </div>
+
+                <div class="analysis-panel">
+                    <div class="trust-score-card">
+                        <div class="trust-label">Trust Score</div>
+                        <div class="trust-score high" id="trustScore">1.00</div>
+                        <div class="trust-label">High Trust</div>
+                        <div class="trust-breakdown">
+                            <div class="trust-item">
+                                <span>User Code</span>
+                                <span>100%</span>
+                            </div>
+                            <div class="trust-bar">
+                                <div class="trust-fill" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="provenance-card">
+                        <h3>Provenance</h3>
+                        <div class="provenance-list" id="provenanceList">
+                            <div class="provenance-item">
+                                <div class="provenance-source source user">user</div>
+                                <span>main() function</span>
+                                <span class="provenance-confidence">100% confidence</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="policy-card">
+                        <h3>Policy Settings</h3>
+                        <div class="policy-form">
+                            <div class="form-group">
+                                <label class="form-label">Minimum Trust</label>
+                                <input type="range" class="form-input" id="minTrust" min="0" max="1" step="0.1" value="0.7">
+                                <span id="minTrustValue">0.7</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Enforcement Mode</label>
+                                <select class="form-select" id="enforcementMode">
+                                    <option value="report">Report</option>
+                                    <option value="enforce">Enforce</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Scoring</label>
+                                <select class="form-select" id="scoringMode">
+                                    <option value="weighted">Weighted</option>
+                                    <option value="flat">Flat</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <h2>Analysis Results</h2>
+                <div class="results-grid" id="resultsGrid">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Configuration
+        const API_BASE = window.location.protocol === 'file:'
+            ? null  // Offline mode when opened as file
+            : (window.location.origin === 'http://localhost:3000' 
+                ? 'http://localhost:8080' 
+                : `${window.location.origin}/api`);
+
+        // State
+        let currentCode = '';
+        let analysisResults = null;
+        let serverOnline = false;
+
+        // DOM Elements
+        const codeEditor = document.getElementById('codeEditor');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const fileUpload = document.getElementById('fileUpload');
+        const trustScore = document.getElementById('trustScore');
+        const provenanceList = document.getElementById('provenanceList');
+        const resultsGrid = document.getElementById('resultsGrid');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const minTrust = document.getElementById('minTrust');
+        const minTrustValue = document.getElementById('minTrustValue');
+        const enforcementMode = document.getElementById('enforcementMode');
+        const scoringMode = document.getElementById('scoringMode');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkServerHealth();
+            setupEventListeners();
+            loadSampleCode();
+        });
+
+        function setupEventListeners() {
+            analyzeBtn.addEventListener('click', analyzeCode);
+            clearBtn.addEventListener('click', clearEditor);
+            codeEditor.addEventListener('input', () => {
+                currentCode = codeEditor.value;
+            });
+            
+            // File upload
+            fileUpload.addEventListener('click', () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.ae,.aeth,.rs,.py,.ts';
+                input.onchange = (e) => handleFileUpload(e.target.files[0]);
+                input.click();
+            });
+
+            fileUpload.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUpload.classList.add('dragover');
+            });
+
+            fileUpload.addEventListener('dragleave', () => {
+                fileUpload.classList.remove('dragover');
+            });
+
+            fileUpload.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUpload.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file) handleFileUpload(file);
+            });
+
+            // Policy controls
+            minTrust.addEventListener('input', (e) => {
+                minTrustValue.textContent = e.target.value;
+            });
+
+            // Tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                });
+            });
+        }
+
+        async function checkServerHealth() {
+            if (!API_BASE) {
+                // Offline mode - opened as file
+                serverOnline = false;
+                statusIndicator.classList.remove('online');
+                statusText.textContent = 'Offline Mode';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    const health = await response.json();
+                    serverOnline = true;
+                    statusIndicator.classList.add('online');
+                    statusText.textContent = `Online (${health.version || 'v0.1.0'})`;
+                } else {
+                    throw new Error('Server not responding');
+                }
+            } catch (error) {
+                serverOnline = false;
+                statusIndicator.classList.remove('online');
+                statusText.textContent = 'Offline';
+                showMessage('Aether server is offline. Some features may not work.', 'error');
+            }
+        }
+
+        async function analyzeCode() {
+            if (!currentCode.trim()) {
+                showMessage('Please enter some code to analyze.', 'error');
+                return;
+            }
+
+            if (!API_BASE) {
+                // Offline mode - provide mock analysis
+                analyzeBtn.disabled = true;
+                analyzeBtn.innerHTML = '<div class="spinner"></div> Analyzing...';
+                
+                setTimeout(() => {
+                    const mockResults = generateMockAnalysis(currentCode);
+                    analysisResults = mockResults;
+                    updateUI(mockResults);
+                    showMessage('Analysis completed (offline mode)', 'success');
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.textContent = 'Analyze';
+                }, 1500);
+                return;
+            }
+
+            if (!serverOnline) {
+                showMessage('Aether server is offline. Cannot analyze code.', 'error');
+                return;
+            }
+
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<div class="spinner"></div> Analyzing...';
+
+            try {
+                const response = await fetch(`${API_BASE}/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        code: currentCode,
+                        options: {
+                            scoring: scoringMode.value,
+                            include_details: true,
+                            min_trust: parseFloat(minTrust.value),
+                            mode: enforcementMode.value
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Analysis failed: ${response.statusText}`);
+                }
+
+                const results = await response.json();
+                analysisResults = results;
+                updateUI(results);
+                showMessage('Analysis completed successfully!', 'success');
+                
+            } catch (error) {
+                showMessage(`Analysis failed: ${error.message}`, 'error');
+                console.error('Analysis error:', error);
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = 'Analyze';
+            }
+        }
+
+        function updateUI(results) {
+            // Update trust score
+            const score = results.trust_score || 0.0;
+            trustScore.textContent = score.toFixed(2);
+            trustScore.className = 'trust-score';
+            
+            if (score >= 0.8) {
+                trustScore.classList.add('high');
+                trustScore.nextElementSibling.textContent = 'High Trust';
+            } else if (score >= 0.6) {
+                trustScore.classList.add('medium');
+                trustScore.nextElementSibling.textContent = 'Medium Trust';
+            } else {
+                trustScore.classList.add('low');
+                trustScore.nextElementSibling.textContent = 'Low Trust';
+            }
+
+            // Update provenance
+            updateProvenance(results.provenance || []);
+
+            // Update results
+            updateResults(results);
+        }
+
+        function updateProvenance(provenance) {
+            provenanceList.innerHTML = '';
+            
+            provenance.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'provenance-item';
+                
+                const source = document.createElement('div');
+                source.className = `provenance-source source ${item.source}`;
+                source.textContent = item.source;
+                
+                const name = document.createElement('span');
+                name.textContent = item.function || 'unknown';
+                
+                const confidence = document.createElement('span');
+                confidence.className = 'provenance-confidence';
+                confidence.textContent = `${Math.round(item.confidence * 100)}% confidence`;
+                
+                div.appendChild(source);
+                div.appendChild(name);
+                div.appendChild(confidence);
+                provenanceList.appendChild(div);
+            });
+        }
+
+        function updateResults(results) {
+            resultsGrid.innerHTML = '';
+            
+            // Add result cards based on analysis
+            if (results.functions) {
+                results.functions.forEach(func => {
+                    const card = createResultCard(func.name, func.trust_score, func.source);
+                    resultsGrid.appendChild(card);
+                });
+            }
+            
+            if (results.errors && results.errors.length > 0) {
+                const card = createErrorCard(results.errors);
+                resultsGrid.appendChild(card);
+            }
+        }
+
+        function createResultCard(name, score, source) {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            
+            const scoreClass = score >= 0.8 ? 'high' : score >= 0.6 ? 'medium' : 'low';
+            
+            card.innerHTML = `
+                <h4>${name}</h4>
+                <div class="trust-score ${scoreClass}">${score.toFixed(2)}</div>
+                <div class="trust-label">Source: ${source}</div>
+                <div class="trust-bar">
+                    <div class="trust-fill" style="width: ${score * 100}%"></div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function createErrorCard(errors) {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.style.borderColor = '#f85149';
+            
+            card.innerHTML = `
+                <h4 style="color: #f85149;">Errors</h4>
+                ${errors.map(error => `<div style="color: #ff7b72; font-size: 0.875rem;">${error}</div>`).join('')}
+            `;
+            
+            return card;
+        }
+
+        function handleFileUpload(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentCode = e.target.result;
+                codeEditor.value = currentCode;
+                showMessage(`Loaded ${file.name}`, 'success');
+            };
+            reader.onerror = () => {
+                showMessage('Failed to read file', 'error');
+            };
+            reader.readAsText(file);
+        }
+
+        function clearEditor() {
+            currentCode = '';
+            codeEditor.value = '';
+            analysisResults = null;
+            resetUI();
+            showMessage('Editor cleared', 'success');
+        }
+
+        function resetUI() {
+            trustScore.textContent = '1.00';
+            trustScore.className = 'trust-score high';
+            trustScore.nextElementSibling.textContent = 'High Trust';
+            provenanceList.innerHTML = '';
+            resultsGrid.innerHTML = '';
+        }
+
+        function loadSampleCode() {
+            currentCode = `@prov(source: "user", confidence: 1.0)
+fn main() -> Int {
+  42
+}
+
+@prov(source: "claude", confidence: 0.85)
+fn calculate_total(items: List<Item>) -> Float {
+  // AI-generated implementation
+  let total = 0.0;
+  for item in items {
+    total += item.price;
+  }
+  total
+}
+
+@prov(source: "cursor", confidence: 0.75)
+fn process_user_data(data: UserData) -> ProcessedData {
+  // Cursor-generated implementation
+  ProcessedData {
+    name: data.name,
+    score: calculate_score(data)
+  }
+}`;
+            codeEditor.value = currentCode;
+        }
+
+        function generateMockAnalysis(code) {
+            // Parse @prov tags from code
+            const provMatches = code.match(/@prov\(\s*source:\s*"([^"]+)"\s*,\s*confidence:\s*([\d.]+)\s*\)/g) || [];
+            const functions = code.match(/fn\s+(\w+)\s*\([^)]*\)\s*->\s*[^{]+/g) || [];
+            
+            let totalTrust = 0;
+            let trustCount = 0;
+            const provenance = [];
+            
+            // Extract provenance information
+            provMatches.forEach(match => {
+                const sourceMatch = match.match(/source:\s*"([^"]+)"/);
+                const confMatch = match.match(/confidence:\s*([\d.]+)/);
+                
+                if (sourceMatch && confMatch) {
+                    const source = sourceMatch[1];
+                    const confidence = parseFloat(confMatch[1]);
+                    const trustWeight = getTrustWeight(source);
+                    const weightedScore = confidence * trustWeight;
+                    
+                    totalTrust += weightedScore;
+                    trustCount++;
+                    
+                    provenance.push({
+                        source: source,
+                        confidence: confidence,
+                        function: functions[provenance.length] || 'unknown',
+                        trust_score: weightedScore
+                    });
+                }
+            });
+            
+            // Add user code if no @prov tags found
+            if (provenance.length === 0 && functions.length > 0) {
+                provenance.push({
+                    source: 'user',
+                    confidence: 1.0,
+                    function: functions[0] || 'main',
+                    trust_score: 1.0
+                });
+                totalTrust = 1.0;
+                trustCount = 1;
+            }
+            
+            const finalScore = trustCount > 0 ? totalTrust / trustCount : 0.85;
+            
+            return {
+                trust_score: finalScore,
+                provenance: provenance,
+                functions: functions.map((func, i) => {
+                    const prov = provenance[i] || { source: 'user', confidence: 1.0 };
+                    return {
+                        name: func.match(/fn\s+(\w+)/)?.[1] || 'unknown',
+                        trust_score: prov.trust_score || 0.85,
+                        source: prov.source || 'user'
+                    };
+                }),
+                errors: []
+            };
+        }
+        
+        function getTrustWeight(source) {
+            const weights = {
+                'user': 1.0,
+                'claude': 0.85,
+                'cursor': 0.80,
+                'grok': 0.75,
+                'ai': 0.70
+            };
+            return weights[source] || 0.70;
+        }
+
+        function showMessage(message, type) {
+            const existing = document.querySelector('.error-message, .success-message');
+            if (existing) existing.remove();
+            
+            const div = document.createElement('div');
+            div.className = type === 'error' ? 'error-message' : 'success-message';
+            div.textContent = message;
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(div, container.firstChild);
+            
+            setTimeout(() => div.remove(), 5000);
+        }
+    </script>
+</body>
+</html>
