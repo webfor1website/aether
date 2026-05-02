@@ -679,11 +679,9 @@ fn main() -> Int {
         const scoringMode = document.getElementById('scoringMode');
 
         // Initialize the app
-        let app;
         let learningSystem;
         document.addEventListener('DOMContentLoaded', () => {
             learningSystem = new AILearningSystem();
-            app = new FlowStateTracker();
             setupCorrectionUI();
             setupEventListeners();
             checkServerHealth();
