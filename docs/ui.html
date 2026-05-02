@@ -254,6 +254,62 @@
             font-size: 0.875rem;
         }
 
+        /* Correction Success Popup */
+        .correction-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--bg-color);
+            border: 2px solid var(--success-color);
+            border-radius: var(--radius);
+            padding: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            min-width: 300px;
+            text-align: center;
+        }
+
+        .correction-popup.success {
+            border-color: var(--success-color);
+        }
+
+        .correction-popup h3 {
+            color: var(--success-color);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .correction-popup p {
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .correction-popup .close-popup {
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .correction-popup .close-popup:hover {
+            opacity: 0.8;
+        }
+
+        .correction-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -811,7 +867,7 @@ fn main() -> Int {
                 }
                 
                 closeCorrectionModal();
-                showMessage(`✅ Correction saved! ${correctSource === 'grok' ? 'Grok' : correctSource} pattern weights updated for future detection.`, 'success');
+                showCorrectionPopup(correctSource, confidence);
             } catch (error) {
                 console.error('Error submitting correction:', error);
                 showMessage('Error saving correction: ' + error.message, 'error');
@@ -1991,6 +2047,46 @@ class AILearningSystem {
         return stats;
     }
 }
+
+        function showCorrectionPopup(correctSource, confidence) {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'correction-popup-overlay';
+            
+            // Create popup
+            const popup = document.createElement('div');
+            popup.className = 'correction-popup success';
+            
+            const sourceName = correctSource === 'grok' ? 'Grok' : 
+                             correctSource === 'claude' ? 'Claude' :
+                             correctSource === 'cursor' ? 'Cursor' :
+                             correctSource === 'user' ? 'Human' : 'AI';
+            
+            popup.innerHTML = `
+                <h3>✅ Feedback Logged!</h3>
+                <p><strong>${sourceName}</strong> pattern weights updated</p>
+                <p>Confidence: ${confidence}%</p>
+                <p>Future detection will improve for similar code patterns</p>
+                <button class="close-popup">Got it!</button>
+            `;
+            
+            // Add to page
+            document.body.appendChild(overlay);
+            document.body.appendChild(popup);
+            
+            // Handle close button
+            const closeBtn = popup.querySelector('.close-popup');
+            closeBtn.addEventListener('click', () => {
+                overlay.remove();
+                popup.remove();
+            });
+            
+            // Auto-close after 5 seconds
+            setTimeout(() => {
+                if (overlay.parentNode) overlay.remove();
+                if (popup.parentNode) popup.remove();
+            }, 5000);
+        }
 
         function showMessage(message, type) {
             const existing = document.querySelector('.error-message, .success-message');
