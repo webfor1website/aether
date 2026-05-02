@@ -206,7 +206,69 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        .correction-form {
+            max-width: 500px;
+        }
+
+        .current-detection {
+            padding: 1rem;
+            background-color: var(--light-bg);
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+        }
+
+        .detection-result {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .source-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
             font-size: 0.875rem;
+            font-weight: 500;
+            color: white;
+        }
+
+        .source-user { background-color: var(--success-color); }
+        .source-claude { background-color: #f85149; }
+        .source-cursor { background-color: var(--primary-color); }
+        .source-grok { background-color: var(--secondary-color); }
+        .source-ai { background-color: var(--warning-color); }
+
+        .correction-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        .learning-stats {
+            padding: 1rem;
+            background-color: var(--light-bg);
+            border-radius: var(--radius);
+            margin-top: 1rem;
+            font-size: 0.875rem;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--light-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-secondary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-primary);
         }
 
         .trust-bar {
@@ -502,8 +564,56 @@ fn main() -> Int {
                     </div>
 
                     <div class="policy-card">
-                        <h3>Policy Settings</h3>
-                        <div class="policy-form">
+                        <h3>Policy
+        <!-- AI Source Correction Modal -->
+        <div id="correction-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Correct AI Source</h2>
+                    <button id="close-correction" class="btn btn-ghost">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="correction-form">
+                        <div class="form-group">
+                            <label class="form-label">Current Detection:</label>
+                            <div id="current-detection" class="current-detection"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Correct AI Source:</label>
+                            <select id="correct-source" class="form-select">
+                                <option value="">Select the correct AI source...</option>
+                                <option value="user">Human (User)</option>
+                                <option value="claude">Claude (Anthropic)</option>
+                                <option value="cursor">Cursor</option>
+                                <option value="grok">Grok (X.AI)</option>
+                                <option value="ai">Generic AI</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confidence (How certain are you?):</label>
+                            <select id="correction-confidence" class="form-select">
+                                <option value="100">100% - Absolutely certain</option>
+                                <option value="90">90% - Very confident</option>
+                                <option value="75">75% - Confident</option>
+                                <option value="50">50% - Somewhat confident</option>
+                                <option value="25">25% - Not very confident</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Notes (Optional):</label>
+                            <textarea id="correction-notes" class="textarea" placeholder="Any additional context about why this correction is needed..."></textarea>
+                        </div>
+                        <div class="correction-actions">
+                            <button id="submit-correction" class="btn btn-primary">Submit Correction</button>
+                            <button id="cancel-correction" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal hidden">
                             <div class="form-group">
                                 <label class="form-label">Minimum Trust</label>
                                 <input type="range" class="form-input" id="minTrust" min="0" max="1" step="0.1" value="0.7">
@@ -529,7 +639,10 @@ fn main() -> Int {
             </div>
 
             <div class="results-section">
-                <h2>Analysis Results</h2>
+                <div class="card-header">
+                    <h2>Analysis Summary</h2>
+                    <button id="correct-source-btn" class="btn btn-ghost">🔧 Correct AI Source</button>
+                </div>
                 <div class="results-grid" id="resultsGrid">
                     <!-- Results will be populated here -->
                 </div>
@@ -565,12 +678,132 @@ fn main() -> Int {
         const enforcementMode = document.getElementById('enforcementMode');
         const scoringMode = document.getElementById('scoringMode');
 
-        // Initialize
+        // Initialize the app
+        let app;
+        let learningSystem;
         document.addEventListener('DOMContentLoaded', () => {
-            checkServerHealth();
+            learningSystem = new AILearningSystem();
+            app = new FlowStateTracker();
+            setupCorrectionUI();
             setupEventListeners();
             loadSampleCode();
         });
+
+        function setupCorrectionUI() {
+            const correctBtn = document.getElementById('correct-source-btn');
+            const correctionModal = document.getElementById('correction-modal');
+            const closeBtn = document.getElementById('close-correction');
+            const submitBtn = document.getElementById('submit-correction');
+            const cancelBtn = document.getElementById('cancel-correction');
+
+            correctBtn.addEventListener('click', () => {
+                openCorrectionModal();
+            });
+
+            closeBtn.addEventListener('click', () => {
+                closeCorrectionModal();
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                closeCorrectionModal();
+            });
+
+            submitBtn.addEventListener('click', () => {
+                submitCorrection();
+            });
+
+            // Close modal when clicking outside
+            correctionModal.addEventListener('click', (e) => {
+                if (e.target === correctionModal) {
+                    closeCorrectionModal();
+                }
+            });
+        }
+
+        function openCorrectionModal() {
+            const modal = document.getElementById('correction-modal');
+            const currentDetection = document.getElementById('current-detection');
+            
+            if (analysisResults && analysisResults.provenance && analysisResults.provenance.length > 0) {
+                const topResult = analysisResults.provenance[0];
+                currentDetection.innerHTML = `
+                    <div class="detection-result">
+                        <span class="source-badge source-${topResult.source}">${topResult.source}</span>
+                        <span class="confidence">${Math.round(topResult.confidence * 100)}% confidence</span>
+                    </div>
+                `;
+            } else {
+                currentDetection.innerHTML = '<div class="detection-result">No analysis available</div>';
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeCorrectionModal() {
+            const modal = document.getElementById('correction-modal');
+            modal.classList.add('hidden');
+            
+            // Reset form
+            document.getElementById('correct-source').value = '';
+            document.getElementById('correction-confidence').value = '100';
+            document.getElementById('correction-notes').value = '';
+        }
+
+        function submitCorrection() {
+            const correctSource = document.getElementById('correct-source').value;
+            const confidence = parseInt(document.getElementById('correction-confidence').value);
+            const notes = document.getElementById('correction-notes').value;
+            
+            if (!correctSource) {
+                showMessage('Please select the correct AI source', 'error');
+                return;
+            }
+            
+            if (!analysisResults || !analysisResults.provenance || analysisResults.provenance.length === 0) {
+                showMessage('No analysis results to correct', 'error');
+                return;
+            }
+            
+            const detectedSource = analysisResults.provenance[0].source;
+            const code = currentCode;
+            
+            // Add correction to learning system
+            const correction = learningSystem.addCorrection(code, detectedSource, correctSource, confidence, notes);
+            
+            // Update the analysis results with adaptive probabilities
+            const baseProbabilities = calculateAdvancedProbabilities(code);
+            const adaptiveProbabilities = learningSystem.getAdaptiveProbabilities(code, baseProbabilities);
+            
+            // Update the UI with new probabilities
+            updateAnalysisWithCorrection(adaptiveProbabilities, correctSource);
+            
+            closeCorrectionModal();
+            showMessage(`Correction saved! AI detection will improve for similar code patterns.`, 'success');
+        }
+
+        function updateAnalysisWithCorrection(probabilities, correctSource) {
+            // Update the provenance with corrected source
+            if (analysisResults && analysisResults.provenance) {
+                // Find the highest probability source
+                const topSource = Object.entries(probabilities).reduce((max, [source, prob]) => 
+                    prob > max.prob ? {source, prob} : max, {source: 'unknown', prob: 0});
+                
+                // Update the primary result
+                analysisResults.provenance[0] = {
+                    source: correctSource, // Use user's correction as primary
+                    confidence: 1.0,
+                    function: analysisResults.provenance[0].function || 'main',
+                    trust_score: getTrustWeight(correctSource)
+                };
+                
+                // Re-update the UI
+                updateUI(analysisResults);
+                
+                // Show learning stats
+                const stats = learningSystem.getTrainingStats();
+                console.log('Learning System Stats:', stats);
+            }
+        }
 
         function setupEventListeners() {
             analyzeBtn.addEventListener('click', analyzeCode);
@@ -1552,6 +1785,178 @@ fn process_user_data(data: UserData) -> ProcessedData {
             };
             return weights[source] || 0.70;
         }
+
+        // AI Learning System
+class AILearningSystem {
+    constructor() {
+        this.trainingData = this.loadTrainingData();
+        this.patternWeights = this.loadPatternWeights();
+    }
+
+    loadTrainingData() {
+        const saved = localStorage.getItem('aether-training-data');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    loadPatternWeights() {
+        const saved = localStorage.getItem('aether-pattern-weights');
+        return saved ? JSON.parse(saved) : {
+            cursor: {},
+            claude: {},
+            grok: {},
+            ai: {},
+            user: {}
+        };
+    }
+
+    saveTrainingData() {
+        localStorage.setItem('aether-training-data', JSON.stringify(this.trainingData));
+    }
+
+    savePatternWeights() {
+        localStorage.setItem('aether-pattern-weights', JSON.stringify(this.patternWeights));
+    }
+
+    addCorrection(code, detectedSource, correctSource, confidence, notes) {
+        const correction = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            code: code,
+            detectedSource: detectedSource,
+            correctSource: correctSource,
+            confidence: confidence,
+            notes: notes,
+            patterns: this.extractPatterns(code)
+        };
+
+        this.trainingData.push(correction);
+        this.updatePatternWeights(correction);
+        this.saveTrainingData();
+        this.savePatternWeights();
+
+        return correction;
+    }
+
+    extractPatterns(code) {
+        const patterns = {};
+        
+        // Extract all patterns from our detection system
+        Object.values(cursorPatterns).forEach(category => {
+            category.forEach(({ pattern, description }) => {
+                if (pattern.test(code)) {
+                    patterns[description] = { source: 'cursor', matched: true };
+                }
+            });
+        });
+
+        Object.values(grokPatterns).forEach(category => {
+            category.forEach(({ pattern, description }) => {
+                if (pattern.test(code)) {
+                    patterns[description] = { source: 'grok', matched: true };
+                }
+            });
+        });
+
+        Object.values(claudePatterns).forEach(category => {
+            category.forEach(({ pattern, description }) => {
+                if (pattern.test(code)) {
+                    patterns[description] = { source: 'claude', matched: true };
+                }
+            });
+        });
+
+        return patterns;
+    }
+
+    updatePatternWeights(correction) {
+        const { patterns, correctSource, confidence } = correction;
+        const confidenceFactor = confidence / 100;
+
+        Object.entries(patterns).forEach(([patternDescription, patternInfo]) => {
+            const patternKey = patternDescription;
+            
+            if (!this.patternWeights[correctSource][patternKey]) {
+                this.patternWeights[correctSource][patternKey] = {
+                    weight: 0.5,
+                    corrections: 0,
+                    confidence: 0
+                };
+            }
+
+            // Increase weight for correct patterns
+            if (patternInfo.source === correctSource) {
+                this.patternWeights[correctSource][patternKey].weight += 0.1 * confidenceFactor;
+                this.patternWeights[correctSource][patternKey].confidence += 0.1 * confidenceFactor;
+            }
+            // Decrease weight for incorrect patterns
+            else {
+                this.patternWeights[correctSource][patternKey].weight -= 0.05 * confidenceFactor;
+                
+                // Add weight to the correct source for this pattern
+                if (!this.patternWeights[patternInfo.source][patternKey]) {
+                    this.patternWeights[patternInfo.source][patternKey] = {
+                        weight: 0.3,
+                        corrections: 0,
+                        confidence: 0
+                    };
+                }
+                this.patternWeights[patternInfo.source][patternKey].weight += 0.05 * confidenceFactor;
+            }
+
+            this.patternWeights[correctSource][patternKey].corrections++;
+        });
+    }
+
+    getAdaptiveProbabilities(code, baseProbabilities) {
+        const patterns = this.extractPatterns(code);
+        const adjustedProbabilities = { ...baseProbabilities };
+
+        Object.entries(patterns).forEach(([patternDescription, patternInfo]) => {
+            Object.keys(this.patternWeights).forEach(source => {
+                const weightData = this.patternWeights[source][patternDescription];
+                if (weightData && weightData.corrections > 0) {
+                    const adjustment = (weightData.weight - 0.5) * 0.2; // Scale adjustment
+                    adjustedProbabilities[source] += adjustment;
+                }
+            });
+        });
+
+        // Normalize probabilities
+        const total = Object.values(adjustedProbabilities).reduce((sum, prob) => sum + prob, 0);
+        Object.keys(adjustedProbabilities).forEach(source => {
+            adjustedProbabilities[source] = adjustedProbabilities[source] / total;
+        });
+
+        return adjustedProbabilities;
+    }
+
+    getTrainingStats() {
+        const stats = {
+            totalCorrections: this.trainingData.length,
+            accuracyBySource: {},
+            patternsLearned: 0,
+            confidence: 0
+        };
+
+        this.trainingData.forEach(correction => {
+            const source = correction.correctSource;
+            if (!stats.accuracyBySource[source]) {
+                stats.accuracyBySource[source] = { correct: 0, total: 0 };
+            }
+            stats.accuracyBySource[source].total++;
+            if (correction.correctSource === correction.detectedSource) {
+                stats.accuracyBySource[source].correct++;
+            }
+        });
+
+        // Count learned patterns
+        Object.values(this.patternWeights).forEach(sourceWeights => {
+            stats.patternsLearned += Object.values(sourceWeights).filter(w => w.corrections > 0).length;
+        });
+
+        return stats;
+    }
+}
 
         function showMessage(message, type) {
             const existing = document.querySelector('.error-message, .success-message');
