@@ -8,6 +8,13 @@ rust-version.workspace = true
 homepage.workspace = true
 repository.workspace = true
 documentation.workspace = true
+description = "Provenance-first programming language CLI — trust enforcement for AI-generated code"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/webfor1website/aether"
+homepage = "https://github.com/webfor1website/aether"
+keywords = ["provenance", "trust", "ai", "governance", "cli"]
+categories = ["command-line-utilities", "development-tools"]
+edition = "2021"
 
 [dependencies]
 aether-core = { path = "../aether-core" }
