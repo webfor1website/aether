@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aether - The immune system for AI-generated code</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        header {
+            padding: 60px 0;
+            text-align: center;
+            border-bottom: 1px solid #21262d;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #58a6ff 0%, #79c0ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: 1.25rem;
+            color: #8b949e;
+            margin-bottom: 40px;
+        }
+
+        nav {
+            background-color: #161b22;
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid #21262d;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 24px;
+        }
+
+        nav a {
+            color: #58a6ff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: #79c0ff;
+        }
+
+        main {
+            padding: 60px 0;
+        }
+
+        section {
+            margin-bottom: 80px;
+        }
+
+        h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #f0f6fc;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            margin-top: 40px;
+            color: #f0f6fc;
+        }
+
+        p {
+            margin-bottom: 16px;
+            color: #c9d1d9;
+        }
+
+        code {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            background-color: #161b22;
+            padding: 0.2em 0.4em;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #f0f6fc;
+        }
+
+        pre {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .command-block {
+            background-color: #0d4f8c;
+            border: 1px solid #1f6feb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .command-block code {
+            color: #79c0ff;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .feature-card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .feature-card h3 {
+            margin-top: 0;
+            color: #58a6ff;
+        }
+
+        .api-endpoint {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .method {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.875em;
+            margin-bottom: 8px;
+        }
+
+        .method.post {
+            background-color: #238636;
+            color: white;
+        }
+
+        .method.get {
+            background-color: #1f6feb;
+            color: white;
+        }
+
+        footer {
+            background-color: #161b22;
+            border-top: 1px solid #21262d;
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        footer a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            color: #79c0ff;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .tagline {
+                font-size: 1.1rem;
+            }
+
+            nav ul {
+                gap: 16px;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Aether</h1>
+            <p class="tagline">The immune system for AI-generated code</p>
+        </div>
+    </header>
+
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="#what-is-aether">What is Aether</a></li>
+                <li><a href="#quick-start">Quick Start</a></li>
+                <li><a href="#cli-reference">CLI Reference</a></li>
+                <li><a href="#provenance-tags">Provenance tags</a></li>
+                <li><a href="#trust-scoring">Trust scoring</a></li>
+                <li><a href="#policy-config">Policy config</a></li>
+                <li><a href="#http-api">HTTP API</a></li>
+                <li><a href="#ci-integration">CI Integration</a></li>
+                <li><a href="#docker">Docker</a></li>
+                <li><a href="#interop">Interop</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <div class="container">
+            <section id="what-is-aether">
+                <h2>What is Aether</h2>
+                <p>Aether is a provenance-first programming language and toolchain that tracks, scores, and governs AI-generated code. Every function carries provenance metadata about who (or what) wrote it, and Aether enforces trust policies based on this information.</p>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h3>Provenance Tracking</h3>
+                        <p>Every function is tagged with <code>@prov(source: "...", confidence: ...)</code> metadata that tracks the AI model, human author, or tool that created it.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Trust Scoring</h3>
+                        <p>Aether calculates weighted trust scores based on provenance, allowing you to set policies that balance automation with safety.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Policy Enforcement</h3>
+                        <p>Configure trust thresholds and enforcement modes (report vs enforce) to match your team's risk tolerance and workflow.</p>
+                    </div>
+                </div>
+
+                <p>Think of Aether as an immune system for your codebase - it identifies potentially risky AI-generated code and helps you make informed decisions about what to run, ship, or modify.</p>
+            </section>
+
+            <section id="quick-start">
+                <h2>Quick Start</h2>
+                <p>Get started with Aether in three simple steps:</p>
+
+                <h3>1. Initialize a new project</h3>
+                <div class="command-block">
+                    <pre><code>$ aether init myproject
+[aether] created: main.ae
+[aether] created: .aether-policy.toml
+[aether] created: .aether-wellbeing
+[aether] initialized new project: myproject
+[aether] run: aether run --session-id dev main.ae</code></pre>
+                </div>
+
+                <h3>2. Run your first program</h3>
+                <div class="command-block">
+                    <pre><code>$ cd myproject
+$ aether run --session-id dev main.ae
+  final trust score: 1.00
+Result: 42</code></pre>
+                </div>
+
+                <h3>3. Generate a trust report</h3>
+                <div class="command-block">
+                    <pre><code>$ aether report .
+[aether] main.ae: trust score 1.00 (user provenance)</code></pre>
+                </div>
+
+                <p>That's it! You now have a provenance-aware project with trust scoring. The <code>.aether-policy.toml</code> file lets you configure trust policies for your team.</p>
+            </section>
+
+            <section id="cli-reference">
+                <h2>CLI Reference</h2>
+                <p>Aether provides a complete command-line interface for project management, code execution, and trust analysis.</p>
+
+                <h3>init</h3>
+                <p>Create a new Aether project with default configuration files.</p>
+                <div class="command-block">
+                    <pre><code>$ aether init [project_name]
+$ aether init  # Initialize in current directory</code></pre>
+                </div>
+
+                <h3>integrate</h3>
+                <p>Onboard existing codebases by scanning for source files and generating policy configuration.</p>
+                <div class="command-block">
+                    <pre><code>$ aether integrate
+[aether] found 12 Rust files, 8 Python files, 3 TypeScript files
+[aether] generated .aether-policy.toml</code></pre>
+                </div>
+
+                <h3>dev</h3>
+                <p>Watch for file changes and automatically re-run programs with hot reloading.</p>
+                <div class="command-block">
+                    <pre><code>$ aether dev
+[aether] watching for changes... (Ctrl+C to stop)
+[aether] file changed: main.ae — re-running...
+  final trust score: 1.00
+Result: 42</code></pre>
+                </div>
+
+                <h3>run</h3>
+                <p>Execute Aether programs with trust enforcement and provenance tracking.</p>
+                <div class="command-block">
+                    <pre><code>$ aether run --session-id dev main.ae
+$ aether run --session-id dev --min-trust 0.8 main.ae
+$ aether run --session-id dev --mode report main.ae</code></pre>
+                </div>
+
+                <h3>report</h3>
+                <p>Generate trust reports for files or directories, with support for SARIF output.</p>
+                <div class="command-block">
+                    <pre><code>$ aether report .
+$ aether report --format sarif src/ > results.sarif</code></pre>
+                </div>
+
+                <h3>wrap</h3>
+                <p>Generate Aether extern stubs for Rust, Python, or TypeScript files.</p>
+                <div class="command-block">
+                    <pre><code>$ aether wrap mylib.rs --source claude --confidence 0.7
+$ aether wrap mymodule.py --source ai --confidence 0.7
+$ aether wrap mycomponent.ts --source ai --confidence 0.7</code></pre>
+                </div>
+
+                <h3>replay</h3>
+                <p>Replay a previous session to review execution details and trust scores.</p>
+                <div class="command-block">
+                    <pre><code>$ aether replay --session-id dev</code></pre>
+                </div>
+
+                <h3>check</h3>
+                <p>Parse and type-check Aether files without execution.</p>
+                <div class="command-block">
+                    <pre><code>$ aether check main.ae</code></pre>
+                </div>
+            </section>
+
+            <section id="provenance-tags">
+                <h2>Provenance tags</h2>
+                <p>Provenance tags are the core of Aether's tracking system. Every function can be annotated with <code>@prov</code> metadata:</p>
+
+                <div class="command-block">
+                    <pre><code>@prov(source: "user", confidence: 1.0)
+fn main() -> Int {
+  42
+}
+
+@prov(source: "claude", confidence: 0.85)
+fn calculate_total(items: List<Item>) -> Float {
+  // AI-generated implementation
+}
+
+@prov(source: "cursor", confidence: 0.75)
+fn process_user_data(data: UserData) -> ProcessedData {
+  // Cursor-generated implementation
+}</code></pre>
+                </div>
+
+                <h3>Source values</h3>
+                <ul>
+                    <li><code>"user"</code> - Human-written code</li>
+                    <li><code>"claude"</code> - Generated by Claude</li>
+                    <li><code>"cursor"</code> - Generated by Cursor</li>
+                    <li><code>"grok"</code> - Generated by Grok</li>
+                    <li><code>"ai"</code> - Generic AI source</li>
+                </ul>
+
+                <h3>Confidence scores</h3>
+                <p>Confidence ranges from 0.0 to 1.0, representing the certainty of the provenance attribution. Higher confidence means more reliable trust scoring.</p>
+            </section>
+
+            <section id="trust-scoring">
+                <h2>Trust scoring</h2>
+                <p>Aether calculates trust scores using a weighted formula that considers provenance, confidence, and function characteristics.</p>
+
+                <h3>Weighted trust formula</h3>
+                <div class="command-block">
+                    <pre><code>trust_score = Σ(prov_confidence × source_weight × function_weight) / Σ(function_weight)</code></pre>
+                </div>
+
+                <h3>Source weights (default)</h3>
+                <ul>
+                    <li><code>user</code>: 1.0 (full trust)</li>
+                    <li><code>claude</code>: 0.85</li>
+                    <li><code>cursor</code>: 0.80</li>
+                    <li><code>grok</code>: 0.75</li>
+                    <li><code>ai</code>: 0.70</li>
+                </ul>
+
+                <h3>Function weights</h3>
+                <ul>
+                    <li>Entry points (main): 1.0</li>
+                    <li>Public functions: 0.9</li>
+                    <li>Private functions: 0.7</li>
+                    <li>Helper functions: 0.5</li>
+                </ul>
+
+                <p>The weighted approach ensures that critical functions and human-written code have more influence on the overall trust score.</p>
+            </section>
+
+            <section id="policy-config">
+                <h2>Policy config</h2>
+                <p>The <code>.aether-policy.toml</code> file configures trust policies for your project:</p>
+
+                <div class="command-block">
+                    <pre><code>[trust]
+min_trust = 0.7
+mode = "report"
+scoring = "weighted"
+
+[sources]
+allowed = ["user", "claude", "cursor", "grok", "ai"]
+
+[output]
+format = "text"</code></pre>
+                </div>
+
+                <h3>Trust section</h3>
+                <ul>
+                    <li><code>min_trust</code>: Minimum trust score threshold (0.0-1.0)</li>
+                    <li><code>mode</code>: "report" (warn) or "enforce" (block)</li>
+                    <li><code>scoring</code>: "weighted" or "flat"</li>
+                </ul>
+
+                <h3>Sources section</h3>
+                <p>Define which provenance sources are allowed in your codebase.</p>
+
+                <h3>Output section</h3>
+                <p>Configure output format for reports and messages.</p>
+            </section>
+
+            <section id="http-api">
+                <h2>HTTP API</h2>
+                <p>Aether Server provides a REST API for trust analysis and health checks.</p>
+
+                <div class="api-endpoint">
+                    <div class="method post">POST</div>
+                    <code>/analyze</code>
+                    <p>Analyze code and return trust scores and provenance information.</p>
+                    <div class="command-block">
+                        <pre><code>POST /analyze
+Content-Type: application/json
+
+{
+  "code": "@prov(source: \"claude\", confidence: 0.85)\nfn main() -> Int { 42 }",
+  "options": {
+    "scoring": "weighted",
+    "include_details": true
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <div class="api-endpoint">
+                    <div class="method get">GET</div>
+                    <code>/health</code>
+                    <p>Check server health and status.</p>
+                    <div class="command-block">
+                        <pre><code>GET /health
+
+{
+  "status": "healthy",
+  "version": "0.1.0",
+  "uptime": "2h 34m"
+}</code></pre>
+                    </div>
+                </div>
+
+                <h3>Running the server</h3>
+                <div class="command-block">
+                    <pre><code>$ aether-server --port 8080
+[aether] server listening on :8080</code></pre>
+                </div>
+            </section>
+
+            <section id="ci-integration">
+                <h2>CI Integration</h2>
+                <p>Integrate Aether into your CI pipeline to enforce trust policies automatically.</p>
+
+                <h3>GitHub Actions</h3>
+                <div class="command-block">
+                    <pre><code>name: Aether Trust Check
+on: [push, pull_request]
+
+jobs:
+  aether-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Aether
+        run: |
+          wget https://github.com/webfor1website/aether/releases/latest/download/aether-cli-linux-x64
+          chmod +x aether-cli-linux-x64
+          sudo mv aether-cli-linux-x64 /usr/local/bin/aether
+      - name: Run trust analysis
+        run: |
+          aether report --format sarif . > results.sarif
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.sarif</code></pre>
+                </div>
+
+                <p>The CI integration will fail builds that don't meet your trust thresholds and provide detailed SARIF reports for GitHub code scanning.</p>
+            </section>
+
+            <section id="docker">
+                <h2>Docker</h2>
+                <p>Run Aether in Docker containers for consistent environments and easy deployment.</p>
+
+                <h3>Dockerfile</h3>
+                <div class="command-block">
+                    <pre><code>FROM rust:1.70 as builder
+WORKDIR /app
+COPY . .
+RUN cargo build --release --bin aether-cli
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /app/target/release/aether-cli /usr/local/bin/aether
+ENTRYPOINT ["aether"]</code></pre>
+                </div>
+
+                <h3>Usage</h3>
+                <div class="command-block">
+                    <pre><code>$ docker build -t aether .
+$ docker run --rm -v $(pwd):/workspace aether run --session-id ci /workspace/main.ae</code></pre>
+                </div>
+            </section>
+
+            <section id="interop">
+                <h2>Interop</h2>
+                <p>Aether can wrap existing code from multiple languages, generating extern stubs with provenance metadata.</p>
+
+                <h3>Rust</h3>
+                <div class="command-block">
+                    <pre><code>$ aether wrap mylib.rs --source claude --confidence 0.7
+
+# Output: mylib.aeth
+@prov(source: "claude", confidence: 0.85)
+
+extern fn calculate_total(Vec<Item>, Float) -> Float;
+extern fn process_user_data(String, Int, Bool) -> String;</code></pre>
+                </div>
+
+                <h3>Python</h3>
+                <div class="command-block">
+                    <pre><code>$ aether wrap mymodule.py --source ai --confidence 0.7
+
+# Output: mymodule.aeth
+@prov(source: "claude", confidence: 0.85)
+
+extern fn calculate_total(Int, Float) -> Float;
+extern fn process_user_data(String, Int, Bool) -> String;</code></pre>
+                </div>
+
+                <h3>TypeScript</h3>
+                <div class="command-block">
+                    <pre><code>$ aether wrap mycomponent.ts --source ai --confidence 0.7
+
+# Output: mycomponent.aeth
+@prov(source: "claude", confidence: 0.85)
+
+extern fn processUserData(String, Int, Bool) -> String;
+extern fn calculateUserScore(Int, Int) -> Int;</code></pre>
+                </div>
+
+                <p>Generated stubs can be imported and used in Aether programs:</p>
+                <div class="command-block">
+                    <pre><code>import "mylib.aeth"
+
+@prov(source: "user", confidence: 1.0)
+fn main() -> Float {
+  let items = vec![Item { name: "test", price: 10.0 }];
+  calculate_total(items, 0.08)
+}</code></pre>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p><a href="https://github.com/webfor1website/aether">GitHub</a> | Open Source — MIT OR Apache-2.0</p>
+        </div>
+    </footer>
+</body>
+</html>
