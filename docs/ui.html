@@ -872,7 +872,7 @@ fn process_user_data(data: UserData) -> ProcessedData {
             let trustCount = 0;
             const provenance = [];
             
-            // Extract provenance information
+            // Extract provenance information from @prov tags
             provMatches.forEach(match => {
                 const sourceMatch = match.match(/source:\s*"([^"]+)"/);
                 const confMatch = match.match(/confidence:\s*([\d.]+)/);
@@ -895,16 +895,22 @@ fn process_user_data(data: UserData) -> ProcessedData {
                 }
             });
             
-            // Add user code if no @prov tags found
-            if (provenance.length === 0 && functions.length > 0) {
+            // If no @prov tags, detect AI patterns in the code
+            if (provenance.length === 0) {
+                const detectedSource = detectAISource(code);
+                const confidence = detectedSource === 'user' ? 1.0 : 0.75;
+                const trustWeight = getTrustWeight(detectedSource);
+                const weightedScore = confidence * trustWeight;
+                
+                totalTrust += weightedScore;
+                trustCount++;
+                
                 provenance.push({
-                    source: 'user',
-                    confidence: 1.0,
+                    source: detectedSource,
+                    confidence: confidence,
                     function: functions[0] || 'main',
-                    trust_score: 1.0
+                    trust_score: weightedScore
                 });
-                totalTrust = 1.0;
-                trustCount = 1;
             }
             
             const finalScore = trustCount > 0 ? totalTrust / trustCount : 0.85;
@@ -922,6 +928,95 @@ fn process_user_data(data: UserData) -> ProcessedData {
                 }),
                 errors: []
             };
+        }
+        
+        function detectAISource(code) {
+            // Detect patterns that indicate AI-generated code
+            const lowerCode = code.toLowerCase();
+            
+            // Python-specific patterns
+            if (code.includes('def ') || code.includes('import ') || code.includes('class ')) {
+                // Check for AI patterns in Python code
+                const aiPatterns = [
+                    /#.*(?:generated|created|written|produced)/i,
+                    /#.*(?:ai|claude|gpt|assistant|model)/i,
+                    /def\s+\w+\s*\([^)]*\):\s*"""[\s\S]*?"""/,  // Docstrings (AI loves docstrings)
+                    /#.*TODO|FIXME|NOTE/i,  // AI often adds these comments
+                    /print\(.*\)/,  // Debug prints (AI common)
+                    /#.*(?:example|sample|demo)/i,  // AI often labels examples
+                    /#.*(?:here'?s|here is)/i,  // AI conversational patterns
+                ];
+                
+                // Check for multiple AI indicators
+                let aiScore = 0;
+                aiPatterns.forEach(pattern => {
+                    if (pattern.test(code)) aiScore++;
+                });
+                
+                // Check for overly structured/verbose comments
+                const commentLines = code.match(/^#.*$/gm) || [];
+                if (commentLines.length > 5) aiScore += 2;
+                
+                // Check for comprehensive docstrings
+                const docstringMatches = code.match(/""".*?"""/gs) || [];
+                if (docstringMatches.length > 0 && docstringMatches[0].length > 200) aiScore += 2;
+                
+                // Check for "perfect" error handling (AI over-engineering)
+                if (code.includes('try:') && code.includes('except') && code.includes('finally:')) aiScore += 1;
+                
+                // Check for type hints (AI loves them)
+                if (code.includes(': ') && code.includes(' -> ')) aiScore += 1;
+                
+                if (aiScore >= 3) {
+                    // Determine which AI based on patterns
+                    if (lowerCode.includes('claude') || lowerCode.includes('anthropic')) return 'claude';
+                    if (lowerCode.includes('gpt') || lowerCode.includes('openai')) return 'ai';
+                    if (lowerCode.includes('cursor') || lowerCode.includes('vscode')) return 'cursor';
+                    if (lowerCode.includes('grok') || lowerCode.includes('x.ai')) return 'grok';
+                    return 'ai';  // Generic AI
+                }
+            }
+            
+            // Flask/web app patterns (often AI-generated)
+            if (code.includes('Flask') || code.includes('app.route') || code.includes('render_template')) {
+                const webPatterns = [
+                    /#.*(?:flask|web|api|endpoint)/i,
+                    /@app\.route/,
+                    /def\s+\w+\s*\([^)]*\):\s*#/,
+                    /jsonify/,
+                    /request\.get_json/,
+                    /render_template/,
+                ];
+                
+                let webScore = 0;
+                webPatterns.forEach(pattern => {
+                    if (pattern.test(code)) webScore++;
+                });
+                
+                if (webScore >= 3) return 'ai';
+            }
+            
+            // Check for human patterns
+            const humanPatterns = [
+                /#.*(?:fix|bug|issue|problem)/i,  // Humans fix bugs
+                /#.*(?:todo|hack|temporary)/i,    // Human todos
+                /#.*(?:wip|work in progress)/i,    // Human WIP
+                /print\(["'][^"']*debug[^"']*["']\)/i,  // Debug prints
+                /#.*(?:test|testing)/i,           // Human testing
+            ];
+            
+            let humanScore = 0;
+            humanPatterns.forEach(pattern => {
+                if (pattern.test(code)) humanScore++;
+            });
+            
+            if (humanScore >= 2) return 'user';
+            
+            // Default to user for short, simple code
+            if (code.length < 500) return 'user';
+            
+            // Default to ai for complex, well-structured code without human indicators
+            return 'ai';
         }
         
         function getTrustWeight(source) {
