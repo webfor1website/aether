@@ -1168,165 +1168,6 @@ fn main() -> Int {
             }
             
             // Advanced AI Fingerprinting System
-            
-            // Global AI Pattern Definitions (accessible to learning system)
-const cursorPatterns = {
-    // Structural patterns (weight: 0.9)
-    structural: [
-        { pattern: /class\s+\w+Tracker\s*\{/, weight: 0.9, description: "Tracker class naming" },
-        { pattern: /constructor\(app\)\s*\{/, weight: 0.9, description: "App parameter constructor" },
-        { pattern: /this\.app\s*=\s*app/, weight: 0.8, description: "App property assignment" },
-        { pattern: /this\.\w+\s*=\s*null/, weight: 0.7, description: "Null initialization" },
-        { pattern: /this\.\w+\s*=\s*\[\]/, weight: 0.7, description: "Array initialization" },
-        { pattern: /this\.\w+\s*=\s*\{/, weight: 0.7, description: "Object initialization" },
-    ],
-    
-    // Method naming patterns (weight: 0.8)
-    methodNaming: [
-        { pattern: /start\w+\(\)\s*\{/, weight: 0.8, description: "Start method prefix" },
-        { pattern: /stop\w+\(\)\s*\{/, weight: 0.8, description: "Stop method prefix" },
-        { pattern: /update\w+\(\)\s*\{/, weight: 0.8, description: "Update method prefix" },
-        { pattern: /handle\w+\(\)\s*\{/, weight: 0.8, description: "Handle method prefix" },
-        { pattern: /calculate\w+\(\)\s*\{/, weight: 0.8, description: "Calculate method prefix" },
-        { pattern: /check\w+\(\)\s*\{/, weight: 0.7, description: "Check method prefix" },
-        { pattern: /get\w+\(\)\s*\{/, weight: 0.7, description: "Get method prefix" },
-        { pattern: /set\w+\(\)\s*\{/, weight: 0.7, description: "Set method prefix" },
-    ],
-    
-    // Code organization patterns (weight: 0.9)
-    organization: [
-        { pattern: /const\s+now\s*=\s*Date\.now\(\)/, weight: 0.9, description: "Date.now variable" },
-        { pattern: /const\s+\w+\s*=\s*this\.\w+/, weight: 0.8, description: "Property access" },
-        { pattern: /if\s*\(\w+\.length\s*<\s*\d+\)\s*return/, weight: 0.8, description: "Length check guard" },
-        { pattern: /\.forEach\(\w+\s*=>\s*\{/, weight: 0.8, description: "Arrow function forEach" },
-        { pattern: /\.reduce\(\(sum,\s*\w+\)\s*=>/, weight: 0.8, description: "Reduce with accumulator" },
-        { pattern: /\.filter\(\w+\s*=>/, weight: 0.7, description: "Arrow function filter" },
-        { pattern: /\.map\(\w+\s*=>/, weight: 0.7, description: "Arrow function map" },
-    ],
-    
-    // API usage patterns (weight: 0.8)
-    apiUsage: [
-        { pattern: /document\.addEventListener\(/, weight: 0.8, description: "DOM event listener" },
-        { pattern: /document\.querySelector\(/, weight: 0.8, description: "DOM query selector" },
-        { pattern: /setInterval\(/, weight: 0.7, description: "Timer interval" },
-        { pattern: /clearInterval\(/, weight: 0.7, description: "Clear interval" },
-        { pattern: /audioContext\s*=\s*new\s*\(/, weight: 0.9, description: "Web Audio API" },
-        { pattern: /oscillator\.connect\(/, weight: 0.9, description: "Audio oscillator" },
-        { pattern: /gainNode\.gain\.setValueAtTime\(/, weight: 0.9, description: "Audio gain control" },
-    ],
-    
-    // Comment style patterns (weight: 0.7)
-    comments: [
-        { pattern: /\/\/\s*Calculate\s+\w+/, weight: 0.7, description: "Calculate comments" },
-        { pattern: /\/\/\s*Update\s+\w+/, weight: 0.7, description: "Update comments" },
-        { pattern: /\/\/\s*Keep\s+only\s+last/, weight: 0.8, description: "Keep only comments" },
-        { pattern: /\/\/\s*Track\s+various/, weight: 0.7, description: "Track comments" },
-        { pattern: /\/\/\s*Optimal\s+\w+/, weight: 0.8, description: "Optimal comments" },
-    ],
-    
-    // Mathematical patterns (weight: 0.8)
-    mathematical: [
-        { pattern: /Math\.max\(0,\s*Math\.min\(/, weight: 0.9, description: "Math.max/min pattern" },
-        { pattern: /Math\.round\(/, weight: 0.7, description: "Math.round usage" },
-        { pattern: /Math\.sin\(/, weight: 0.8, description: "Math.sin usage" },
-        { pattern: /Math\.PI/, weight: 0.7, description: "Math.PI constant" },
-        { pattern: /Math\.pow\(/, weight: 0.7, description: "Math.pow usage" },
-        { pattern: /Math\.sqrt\(/, weight: 0.7, description: "Math.sqrt usage" },
-    ],
-    
-    // Export patterns (weight: 0.9)
-    exports: [
-        { pattern: /module\.exports/, weight: 0.9, description: "CommonJS export" },
-        { pattern: /typeof\s+module/, weight: 0.9, description: "Module detection" },
-        { pattern: /if\s*\(typeof\s+module\s*!==/, weight: 0.8, description: "Module guard" },
-    ],
-    
-    // Error handling patterns (weight: 0.7)
-    errorHandling: [
-        { pattern: /if\s*\(!\w+\)\s*return/, weight: 0.7, description: "Early return guard" },
-        { pattern: /if\s*\(\w+\.length\s*===\s*0\)\s*return/, weight: 0.7, description: "Empty array guard" },
-        { pattern: /try\s*\{[\s\S]*?\}\s*catch/, weight: 0.6, description: "Try-catch blocks" },
-    ]
-};
-
-const grokPatterns = {
-    // Rust CLI patterns (weight: 0.9)
-    rustCli: [
-        { pattern: /use clap::Parser;/, weight: 0.9, description: "Clap parser import" },
-        { pattern: /#\[derive\(Parser\)\]/, weight: 0.9, description: "Parser derive macro" },
-        { pattern: /#\[command\(author, version, about\)\]/, weight: 0.9, description: "Command attributes" },
-        { pattern: /struct Args \{/, weight: 0.8, description: "Args struct" },
-        { pattern: /#\[arg\(short, long\)\]/, weight: 0.9, description: "Argument attributes" },
-        { pattern: /let args = Args::parse\(\);/, weight: 0.9, description: "Parse args pattern" },
-        { pattern: /println!\("Hallucination Analysis Report"\);/, weight: 0.9, description: "Analysis report pattern" },
-        { pattern: /println!\("====="\);/, weight: 0.8, description: "Separator pattern" },
-        { pattern: /for issue in report\.issues \{/, weight: 0.8, description: "Issue iteration pattern" },
-        { pattern: /println!\("\[{}\] {}", issue\.severity, issue\.description\);/, weight: 0.9, description: "Issue display pattern" },
-    ],
-    
-    // System tool patterns (weight: 0.8)
-    systemTools: [
-        { pattern: /fn main\(\) \{/, weight: 0.7, description: "Main function" },
-        { pattern: /let detector = Detector::new\(&args\.lang\);/, weight: 0.8, description: "Detector instantiation" },
-        { pattern: /let report = detector\.analyze_file\(&args\.file\);/, weight: 0.8, description: "Analysis pattern" },
-        { pattern: /report\.issues\.len\(\)/, weight: 0.7, description: "Length check" },
-        { pattern: /report\.confidence/, weight: 0.8, description: "Confidence access" },
-        { pattern: /issue\.severity/, weight: 0.7, description: "Severity access" },
-        { pattern: /issue\.description/, weight: 0.7, description: "Description access" },
-    ],
-    
-    // Content patterns (weight: 0.9)
-    content: [
-        { pattern: /💰|💦|🔫|💣|🚀/, weight: 0.9, description: "Emoji usage" },
-        { pattern: /(?:elon|musk|tesla|spacex)/i, weight: 0.9, description: "Elon references" },
-        { pattern: /(?:ass|butt|booty)/i, weight: 0.9, description: "Grok humor" },
-        { pattern: /(?:blaster|shot|gun)/i, weight: 0.8, description: "Aggressive themes" },
-        { pattern: /(?:meme|dank|funny)/i, weight: 0.8, description: "Meme culture" },
-        { pattern: /(?:3000|9000|420)/i, weight: 0.7, description: "Number patterns" },
-        { pattern: /hallucination/i, weight: 0.8, description: "Hallucination analysis" },
-        { pattern: /detector/i, weight: 0.7, description: "Detector terminology" },
-    ],
-    
-    // Linguistic patterns (weight: 0.8)
-    linguistic: [
-        { pattern: /print\(["'][^"']*💰[^"']*["']/, weight: 0.9, description: "Emoji in print" },
-        { pattern: /print\(["'][^"']*ASS[^"']*["']/i, weight: 0.9, description: "ASS in print" },
-        { pattern: /#.*(?:here'?s|here is)/i, weight: 0.7, description: "Conversational patterns" },
-        { pattern: /#.*(?:lol|haha|lmao)/i, weight: 0.8, description: "Laugh patterns" },
-    ],
-    
-    // Variable naming (weight: 0.7)
-    naming: [
-        { pattern: /(?:elon_|musk_|tesla_)/i, weight: 0.8, description: "Elon variable names" },
-        { pattern: /(?:blaster|shot|gun)_/i, weight: 0.7, description: "Aggressive naming" },
-        { pattern: /(?:meme|dank)_/i, weight: 0.7, description: "Meme naming" },
-    ]
-};
-
-const claudePatterns = {
-    // Structural patterns (weight: 0.8)
-    structural: [
-        { pattern: /def\s+\w+\s*\([^)]*\):\s*"""[\s\S]*?"""/, weight: 0.8, description: "Python docstrings" },
-        { pattern: /class\s+\w+:\s*"""[\s\S]*?"""/, weight: 0.8, description: "Class docstrings" },
-        { pattern: /@dataclass/, weight: 0.7, description: "Dataclass decorator" },
-        { pattern: /from\s+typing\s+import/, weight: 0.7, description: "Type hints import" },
-    ],
-    
-    // Comment patterns (weight: 0.8)
-    comments: [
-        { pattern: /#.*(?:TODO|FIXME|NOTE)/i, weight: 0.7, description: "Standard comments" },
-        { pattern: /#.*(?:example|sample|demo)/i, weight: 0.7, description: "Example comments" },
-        { pattern: /#.*(?:generated|created|written)/i, weight: 0.8, description: "Generation comments" },
-    ],
-    
-    // Code style (weight: 0.7)
-    style: [
-        { pattern: /:\s*str/, weight: 0.7, description: "Type hints" },
-        { pattern: /:\s*int/, weight: 0.7, description: "Type hints" },
-        { pattern: /:\s*bool/, weight: 0.7, description: "Type hints" },
-        { pattern: /->\s*None:/, weight: 0.7, description: "Return type hints" },
-    ]
-};
 
 // Calculate AI source probabilities with advanced fingerprinting
 function calculateAdvancedProbabilities(code) {
@@ -1797,7 +1638,166 @@ fn process_user_data(data: UserData) -> ProcessedData {
             return weights[source] || 0.70;
         }
 
-        // AI Learning System
+        // Global AI Pattern Definitions (accessible to learning system)
+const cursorPatterns = {
+    // Structural patterns (weight: 0.9)
+    structural: [
+        { pattern: /class\s+\w+Tracker\s*\{/, weight: 0.9, description: "Tracker class naming" },
+        { pattern: /constructor\(app\)\s*\{/, weight: 0.9, description: "App parameter constructor" },
+        { pattern: /this\.app\s*=\s*app/, weight: 0.8, description: "App property assignment" },
+        { pattern: /this\.\w+\s*=\s*null/, weight: 0.7, description: "Null initialization" },
+        { pattern: /this\.\w+\s*=\s*\[\]/, weight: 0.7, description: "Array initialization" },
+        { pattern: /this\.\w+\s*=\s*\{/, weight: 0.7, description: "Object initialization" },
+    ],
+    
+    // Method naming patterns (weight: 0.8)
+    methodNaming: [
+        { pattern: /start\w+\(\)\s*\{/, weight: 0.8, description: "Start method prefix" },
+        { pattern: /stop\w+\(\)\s*\{/, weight: 0.8, description: "Stop method prefix" },
+        { pattern: /update\w+\(\)\s*\{/, weight: 0.8, description: "Update method prefix" },
+        { pattern: /handle\w+\(\)\s*\{/, weight: 0.8, description: "Handle method prefix" },
+        { pattern: /calculate\w+\(\)\s*\{/, weight: 0.8, description: "Calculate method prefix" },
+        { pattern: /check\w+\(\)\s*\{/, weight: 0.7, description: "Check method prefix" },
+        { pattern: /get\w+\(\)\s*\{/, weight: 0.7, description: "Get method prefix" },
+        { pattern: /set\w+\(\)\s*\{/, weight: 0.7, description: "Set method prefix" },
+    ],
+    
+    // Code organization patterns (weight: 0.9)
+    organization: [
+        { pattern: /const\s+now\s*=\s*Date\.now\(\)/, weight: 0.9, description: "Date.now variable" },
+        { pattern: /const\s+\w+\s*=\s*this\.\w+/, weight: 0.8, description: "Property access" },
+        { pattern: /if\s*\(\w+\.length\s*<\s*\d+\)\s*return/, weight: 0.8, description: "Length check guard" },
+        { pattern: /\.forEach\(\w+\s*=>\s*\{/, weight: 0.8, description: "Arrow function forEach" },
+        { pattern: /\.reduce\(\(sum,\s*\w+\)\s*=>/, weight: 0.8, description: "Reduce with accumulator" },
+        { pattern: /\.filter\(\w+\s*=>/, weight: 0.7, description: "Arrow function filter" },
+        { pattern: /\.map\(\w+\s*=>/, weight: 0.7, description: "Arrow function map" },
+    ],
+    
+    // API usage patterns (weight: 0.8)
+    apiUsage: [
+        { pattern: /document\.addEventListener\(/, weight: 0.8, description: "DOM event listener" },
+        { pattern: /document\.querySelector\(/, weight: 0.8, description: "DOM query selector" },
+        { pattern: /setInterval\(/, weight: 0.7, description: "Timer interval" },
+        { pattern: /clearInterval\(/, weight: 0.7, description: "Clear interval" },
+        { pattern: /audioContext\s*=\s*new\s*\(/, weight: 0.9, description: "Web Audio API" },
+        { pattern: /oscillator\.connect\(/, weight: 0.9, description: "Audio oscillator" },
+        { pattern: /gainNode\.gain\.setValueAtTime\(/, weight: 0.9, description: "Audio gain control" },
+    ],
+    
+    // Comment style patterns (weight: 0.7)
+    comments: [
+        { pattern: /\/\/\s*Calculate\s+\w+/, weight: 0.7, description: "Calculate comments" },
+        { pattern: /\/\/\s*Update\s+\w+/, weight: 0.7, description: "Update comments" },
+        { pattern: /\/\/\s*Keep\s+only\s+last/, weight: 0.8, description: "Keep only comments" },
+        { pattern: /\/\/\s*Track\s+various/, weight: 0.7, description: "Track comments" },
+        { pattern: /\/\/\s*Optimal\s+\w+/, weight: 0.8, description: "Optimal comments" },
+    ],
+    
+    // Mathematical patterns (weight: 0.8)
+    mathematical: [
+        { pattern: /Math\.max\(0,\s*Math\.min\(/, weight: 0.9, description: "Math.max/min pattern" },
+        { pattern: /Math\.round\(/, weight: 0.7, description: "Math.round usage" },
+        { pattern: /Math\.sin\(/, weight: 0.8, description: "Math.sin usage" },
+        { pattern: /Math\.PI/, weight: 0.7, description: "Math.PI constant" },
+        { pattern: /Math\.pow\(/, weight: 0.7, description: "Math.pow usage" },
+        { pattern: /Math\.sqrt\(/, weight: 0.7, description: "Math.sqrt usage" },
+    ],
+    
+    // Export patterns (weight: 0.9)
+    exports: [
+        { pattern: /module\.exports/, weight: 0.9, description: "CommonJS export" },
+        { pattern: /typeof\s+module/, weight: 0.9, description: "Module detection" },
+        { pattern: /if\s*\(typeof\s+module\s*!==/, weight: 0.8, description: "Module guard" },
+    ],
+    
+    // Error handling patterns (weight: 0.7)
+    errorHandling: [
+        { pattern: /if\s*\(!\w+\)\s*return/, weight: 0.7, description: "Early return guard" },
+        { pattern: /if\s*\(\w+\.length\s*===\s*0\)\s*return/, weight: 0.7, description: "Empty array guard" },
+        { pattern: /try\s*\{[\s\S]*?\}\s*catch/, weight: 0.6, description: "Try-catch blocks" },
+    ]
+};
+
+const grokPatterns = {
+    // Rust CLI patterns (weight: 0.9)
+    rustCli: [
+        { pattern: /use clap::Parser;/, weight: 0.9, description: "Clap parser import" },
+        { pattern: /#\[derive\(Parser\)\]/, weight: 0.9, description: "Parser derive macro" },
+        { pattern: /#\[command\(author, version, about\)\]/, weight: 0.9, description: "Command attributes" },
+        { pattern: /struct Args \{/, weight: 0.8, description: "Args struct" },
+        { pattern: /#\[arg\(short, long\)\]/, weight: 0.9, description: "Argument attributes" },
+        { pattern: /let args = Args::parse\(\);/, weight: 0.9, description: "Parse args pattern" },
+        { pattern: /println!\("Hallucination Analysis Report"\);/, weight: 0.9, description: "Analysis report pattern" },
+        { pattern: /println!\("====="\);/, weight: 0.8, description: "Separator pattern" },
+        { pattern: /for issue in report\.issues \{/, weight: 0.8, description: "Issue iteration pattern" },
+        { pattern: /println!\("\[{}\] {}", issue\.severity, issue\.description\);/, weight: 0.9, description: "Issue display pattern" },
+    ],
+    
+    // System tool patterns (weight: 0.8)
+    systemTools: [
+        { pattern: /fn main\(\) \{/, weight: 0.7, description: "Main function" },
+        { pattern: /let detector = Detector::new\(&args\.lang\);/, weight: 0.8, description: "Detector instantiation" },
+        { pattern: /let report = detector\.analyze_file\(&args\.file\);/, weight: 0.8, description: "Analysis pattern" },
+        { pattern: /report\.issues\.len\(\)/, weight: 0.7, description: "Length check" },
+        { pattern: /report\.confidence/, weight: 0.8, description: "Confidence access" },
+        { pattern: /issue\.severity/, weight: 0.7, description: "Severity access" },
+        { pattern: /issue\.description/, weight: 0.7, description: "Description access" },
+    ],
+    
+    // Content patterns (weight: 0.9)
+    content: [
+        { pattern: /💰|💦|🔫|💣|🚀/, weight: 0.9, description: "Emoji usage" },
+        { pattern: /(?:elon|musk|tesla|spacex)/i, weight: 0.9, description: "Elon references" },
+        { pattern: /(?:ass|butt|booty)/i, weight: 0.9, description: "Grok humor" },
+        { pattern: /(?:blaster|shot|gun)/i, weight: 0.8, description: "Aggressive themes" },
+        { pattern: /(?:meme|dank|funny)/i, weight: 0.8, description: "Meme culture" },
+        { pattern: /(?:3000|9000|420)/i, weight: 0.7, description: "Number patterns" },
+        { pattern: /hallucination/i, weight: 0.8, description: "Hallucination analysis" },
+        { pattern: /detector/i, weight: 0.7, description: "Detector terminology" },
+    ],
+    
+    // Linguistic patterns (weight: 0.8)
+    linguistic: [
+        { pattern: /print\(["'][^"']*💰[^"']*["']/, weight: 0.9, description: "Emoji in print" },
+        { pattern: /print\(["'][^"']*ASS[^"']*["']/i, weight: 0.9, description: "ASS in print" },
+        { pattern: /#.*(?:here'?s|here is)/i, weight: 0.7, description: "Conversational patterns" },
+        { pattern: /#.*(?:lol|haha|lmao)/i, weight: 0.8, description: "Laugh patterns" },
+    ],
+    
+    // Variable naming (weight: 0.7)
+    naming: [
+        { pattern: /(?:elon_|musk_|tesla_)/i, weight: 0.8, description: "Elon variable names" },
+        { pattern: /(?:blaster|shot|gun)_/i, weight: 0.7, description: "Aggressive naming" },
+        { pattern: /(?:meme|dank)_/i, weight: 0.7, description: "Meme naming" },
+    ]
+};
+
+const claudePatterns = {
+    // Structural patterns (weight: 0.8)
+    structural: [
+        { pattern: /def\s+\w+\s*\([^)]*\):\s*"""[\s\S]*?"""/, weight: 0.8, description: "Python docstrings" },
+        { pattern: /class\s+\w+:\s*"""[\s\S]*?"""/, weight: 0.8, description: "Class docstrings" },
+        { pattern: /@dataclass/, weight: 0.7, description: "Dataclass decorator" },
+        { pattern: /from\s+typing\s+import/, weight: 0.7, description: "Type hints import" },
+    ],
+    
+    // Comment patterns (weight: 0.8)
+    comments: [
+        { pattern: /#.*(?:TODO|FIXME|NOTE)/i, weight: 0.7, description: "Standard comments" },
+        { pattern: /#.*(?:example|sample|demo)/i, weight: 0.7, description: "Example comments" },
+        { pattern: /#.*(?:generated|created|written)/i, weight: 0.8, description: "Generation comments" },
+    ],
+    
+    // Code style (weight: 0.7)
+    style: [
+        { pattern: /:\s*str/, weight: 0.7, description: "Type hints" },
+        { pattern: /:\s*int/, weight: 0.7, description: "Type hints" },
+        { pattern: /:\s*bool/, weight: 0.7, description: "Type hints" },
+        { pattern: /->\s*None:/, weight: 0.7, description: "Return type hints" },
+    ]
+};
+
+// AI Learning System
 class AILearningSystem {
     constructor() {
         this.trainingData = this.loadTrainingData();
