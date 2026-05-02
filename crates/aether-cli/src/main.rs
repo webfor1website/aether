@@ -50,6 +50,7 @@ enum Commands {
         #[arg(long, default_value = "text")]
         format: String,
     },
+    Integrate,
 }
 
 /// Policy configuration loaded from .aether-policy.toml
@@ -2021,6 +2022,69 @@ for func in &prov_result.typed_ast.program.functions {
                 // For now, just show a warning about the policy
                 eprintln!("[aether] policy mode: enforce (min_trust: {:.2})", policy_config.trust.min_trust);
             }
+        }
+
+        Some(Commands::Integrate) => {
+            // Get current directory
+            let workspace_root = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+            
+            // Scan current directory recursively for source files
+            let mut rust_count = 0;
+            let mut python_count = 0;
+            let mut typescript_count = 0;
+            
+            if let Ok(entries) = std::fs::read_dir(&workspace_root) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_file() {
+                        if let Some(extension) = path.extension() {
+                            let extension_str = extension.to_string_lossy();
+                            match extension_str.as_ref() {
+                                "rs" => rust_count += 1,
+                                "py" => python_count += 1,
+                                "ts" | "tsx" => typescript_count += 1,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Print what was found
+            println!("[aether] found {} Rust files, {} Python files, {} TypeScript files", 
+                     rust_count, python_count, typescript_count);
+            
+            // Generate .aether-policy.toml with defaults
+            let policy_content = format!(
+                r#"[trust]
+min_trust = 0.7
+mode = "report"
+
+[sources]
+allowed = ["user", "claude", "cursor", "grok", "ai"]
+
+[output]
+format = "text"
+"#
+            );
+            
+            let policy_path = workspace_root.join(".aether-policy.toml");
+            match std::fs::write(&policy_path, policy_content) {
+                Ok(()) => {
+                    println!("[aether] generated .aether-policy.toml");
+                }
+                Err(e) => {
+                    eprintln!("Error writing .aether-policy.toml: {}", e);
+                    std::process::exit(1);
+                }
+            }
+            
+            // Print next steps
+            println!("[aether] next steps:");
+            println!("  1. Run: aether wrap <file> --source \"ai\" for each AI-generated file");
+            println!("  2. Run: aether report . to see trust scores");
+            println!("  3. Add to CI: uses: webfor1website/aether/.github/workflows/aether-check.yml@main");
+            println!("  4. Commit .aether-policy.toml to enforce policy across your team");
         }
 
         None => {
