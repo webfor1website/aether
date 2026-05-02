@@ -921,189 +921,266 @@ fn main() -> Int {
                 probabilities.ai -= 0.10;
             }
             
-            // Cursor AI assistant patterns (my specific code signatures)
-            const cursorPatterns = [
-                /class\s+\w+Tracker\s*\{/,  // My class naming convention
-                /constructor\(app\)\s*\{/,  // My constructor pattern with app parameter
-                /this\.app\s*=\s*app/,  // My app assignment pattern
-                /this\.\w+\s*=\s*null/,  // My null initialization pattern
-                /this\.\w+\s*=\s*\[\]/,  // My array initialization pattern
-                /this\.\w+\s*=\s*\{/,  // My object initialization pattern
-                /start\w+\(\)\s*\{/,  // My method naming pattern
-                /stop\w+\(\)\s*\{/,  // My method naming pattern
-                /update\w+\(\)\s*\{/,  // My method naming pattern
-                /handle\w+\(\)\s*\{/,  // My method naming pattern
-                /calculate\w+\(\)\s*\{/,  // My method naming pattern
-                /const\s+now\s*=\s*Date\.now\(\)/,  // My Date.now pattern
-                /const\s+\w+\s*=\s*this\.\w+/,  // My property access pattern
-                /if\s*\(\w+\.length\s*<\s*\d+\)\s*return/,  // My length check pattern
-                /\.forEach\(\w+\s*=>\s*\{/,  // My forEach pattern
-                /\.reduce\(\(sum,\s*\w+\)\s*=>/,  // My reduce pattern
-                /Math\.max\(0,\s*Math\.min\(/,  // My Math pattern
-                /Math\.round\(/,  // My Math.round pattern
-                /new Date\(\)\.toISOString\(\)/,  // My date handling
-                /document\.addEventListener\(/,  // My event listener pattern
-                /document\.querySelector\(/,  // My querySelector pattern
-                /setInterval\(/,  // My interval pattern
-                /clearInterval\(/,  // My clearInterval pattern
-                /audioContext\s*=\s*new\s*\(/,  // My Web Audio API pattern
-                /oscillator\.connect\(/,  // My audio pattern
-                /gainNode\.gain\.setValueAtTime\(/,  // My audio gain pattern
-                /module\.exports/,  // My export pattern
-                /typeof\s+module/,  // my module check pattern
-            ];
+            // Advanced AI Fingerprinting System
             
-            let cursorScore = 0;
-            cursorPatterns.forEach(pattern => {
-                if (pattern.test(code)) cursorScore++;
+            // Cursor-specific patterns (high confidence indicators)
+            const cursorPatterns = {
+                // Structural patterns (weight: 0.9)
+                structural: [
+                    { pattern: /class\s+\w+Tracker\s*\{/, weight: 0.9, description: "Tracker class naming" },
+                    { pattern: /constructor\(app\)\s*\{/, weight: 0.9, description: "App parameter constructor" },
+                    { pattern: /this\.app\s*=\s*app/, weight: 0.8, description: "App property assignment" },
+                    { pattern: /this\.\w+\s*=\s*null/, weight: 0.7, description: "Null initialization" },
+                    { pattern: /this\.\w+\s*=\s*\[\]/, weight: 0.7, description: "Array initialization" },
+                    { pattern: /this\.\w+\s*=\s*\{/, weight: 0.7, description: "Object initialization" },
+                ],
+                
+                // Method naming patterns (weight: 0.8)
+                methodNaming: [
+                    { pattern: /start\w+\(\)\s*\{/, weight: 0.8, description: "Start method prefix" },
+                    { pattern: /stop\w+\(\)\s*\{/, weight: 0.8, description: "Stop method prefix" },
+                    { pattern: /update\w+\(\)\s*\{/, weight: 0.8, description: "Update method prefix" },
+                    { pattern: /handle\w+\(\)\s*\{/, weight: 0.8, description: "Handle method prefix" },
+                    { pattern: /calculate\w+\(\)\s*\{/, weight: 0.8, description: "Calculate method prefix" },
+                    { pattern: /check\w+\(\)\s*\{/, weight: 0.7, description: "Check method prefix" },
+                    { pattern: /get\w+\(\)\s*\{/, weight: 0.7, description: "Get method prefix" },
+                    { pattern: /set\w+\(\)\s*\{/, weight: 0.7, description: "Set method prefix" },
+                ],
+                
+                // Code organization patterns (weight: 0.9)
+                organization: [
+                    { pattern: /const\s+now\s*=\s*Date\.now\(\)/, weight: 0.9, description: "Date.now variable" },
+                    { pattern: /const\s+\w+\s*=\s*this\.\w+/, weight: 0.8, description: "Property access" },
+                    { pattern: /if\s*\(\w+\.length\s*<\s*\d+\)\s*return/, weight: 0.8, description: "Length check guard" },
+                    { pattern: /\.forEach\(\w+\s*=>\s*\{/, weight: 0.8, description: "Arrow function forEach" },
+                    { pattern: /\.reduce\(\(sum,\s*\w+\)\s*=>/, weight: 0.8, description: "Reduce with accumulator" },
+                    { pattern: /\.filter\(\w+\s*=>/, weight: 0.7, description: "Arrow function filter" },
+                    { pattern: /\.map\(\w+\s*=>/, weight: 0.7, description: "Arrow function map" },
+                ],
+                
+                // API usage patterns (weight: 0.8)
+                apiUsage: [
+                    { pattern: /document\.addEventListener\(/, weight: 0.8, description: "DOM event listener" },
+                    { pattern: /document\.querySelector\(/, weight: 0.8, description: "DOM query selector" },
+                    { pattern: /setInterval\(/, weight: 0.7, description: "Timer interval" },
+                    { pattern: /clearInterval\(/, weight: 0.7, description: "Clear interval" },
+                    { pattern: /audioContext\s*=\s*new\s*\(/, weight: 0.9, description: "Web Audio API" },
+                    { pattern: /oscillator\.connect\(/, weight: 0.9, description: "Audio oscillator" },
+                    { pattern: /gainNode\.gain\.setValueAtTime\(/, weight: 0.9, description: "Audio gain control" },
+                ],
+                
+                // Comment style patterns (weight: 0.7)
+                comments: [
+                    { pattern: /\/\/\s*Calculate\s+\w+/, weight: 0.7, description: "Calculate comments" },
+                    { pattern: /\/\/\s*Update\s+\w+/, weight: 0.7, description: "Update comments" },
+                    { pattern: /\/\/\s*Keep\s+only\s+last/, weight: 0.8, description: "Keep only comments" },
+                    { pattern: /\/\/\s*Track\s+various/, weight: 0.7, description: "Track comments" },
+                    { pattern: /\/\/\s*Optimal\s+\w+/, weight: 0.8, description: "Optimal comments" },
+                ],
+                
+                // Mathematical patterns (weight: 0.8)
+                mathematical: [
+                    { pattern: /Math\.max\(0,\s*Math\.min\(/, weight: 0.9, description: "Math.max/min pattern" },
+                    { pattern: /Math\.round\(/, weight: 0.7, description: "Math.round usage" },
+                    { pattern: /Math\.sin\(/, weight: 0.8, description: "Math.sin usage" },
+                    { pattern: /Math\.PI/, weight: 0.7, description: "Math.PI constant" },
+                    { pattern: /Math\.pow\(/, weight: 0.7, description: "Math.pow usage" },
+                    { pattern: /Math\.sqrt\(/, weight: 0.7, description: "Math.sqrt usage" },
+                ],
+                
+                // Export patterns (weight: 0.9)
+                exports: [
+                    { pattern: /module\.exports/, weight: 0.9, description: "CommonJS export" },
+                    { pattern: /typeof\s+module/, weight: 0.9, description: "Module detection" },
+                    { pattern: /if\s*\(typeof\s+module\s*!==/, weight: 0.8, description: "Module guard" },
+                ],
+                
+                // Error handling patterns (weight: 0.7)
+                errorHandling: [
+                    { pattern: /if\s*\(!\w+\)\s*return/, weight: 0.7, description: "Early return guard" },
+                    { pattern: /if\s*\(\w+\.length\s*===\s*0\)\s*return/, weight: 0.7, description: "Empty array guard" },
+                    { pattern: /try\s*\{[\s\S]*?\}\s*catch/, weight: 0.6, description: "Try-catch blocks" },
+                ]
+            };
+            
+            // Grok-specific patterns (high confidence indicators)
+            const grokPatterns = {
+                // Content patterns (weight: 0.9)
+                content: [
+                    { pattern: /💰|💦|🔫|💣|🚀/, weight: 0.9, description: "Emoji usage" },
+                    { pattern: /(?:elon|musk|tesla|spacex)/i, weight: 0.9, description: "Elon references" },
+                    { pattern: /(?:ass|butt|booty)/i, weight: 0.9, description: "Grok humor" },
+                    { pattern: /(?:blaster|shot|gun)/i, weight: 0.8, description: "Aggressive themes" },
+                    { pattern: /(?:meme|dank|funny)/i, weight: 0.8, description: "Meme culture" },
+                    { pattern: /(?:3000|9000|420)/i, weight: 0.7, description: "Number patterns" },
+                ],
+                
+                // Linguistic patterns (weight: 0.8)
+                linguistic: [
+                    { pattern: /print\(["'][^"']*💰[^"']*["']/, weight: 0.9, description: "Emoji in print" },
+                    { pattern: /print\(["'][^"']*ASS[^"']*["']/i, weight: 0.9, description: "ASS in print" },
+                    { pattern: /#.*(?:here'?s|here is)/i, weight: 0.7, description: "Conversational patterns" },
+                    { pattern: /#.*(?:lol|haha|lmao)/i, weight: 0.8, description: "Laugh patterns" },
+                ],
+                
+                // Variable naming (weight: 0.7)
+                naming: [
+                    { pattern: /(?:elon_|musk_|tesla_)/i, weight: 0.8, description: "Elon variable names" },
+                    { pattern: /(?:blaster|shot|gun)_/i, weight: 0.7, description: "Aggressive naming" },
+                    { pattern: /(?:meme|dank)_/i, weight: 0.7, description: "Meme naming" },
+                ]
+            };
+            
+            // Claude-specific patterns (high confidence indicators)
+            const claudePatterns = {
+                // Structural patterns (weight: 0.8)
+                structural: [
+                    { pattern: /def\s+\w+\s*\([^)]*\):\s*"""[\s\S]*?"""/, weight: 0.8, description: "Python docstrings" },
+                    { pattern: /class\s+\w+:\s*"""[\s\S]*?"""/, weight: 0.8, description: "Class docstrings" },
+                    { pattern: /@dataclass/, weight: 0.7, description: "Dataclass decorator" },
+                    { pattern: /from\s+typing\s+import/, weight: 0.7, description: "Type hints import" },
+                ],
+                
+                // Comment patterns (weight: 0.8)
+                comments: [
+                    { pattern: /#.*(?:TODO|FIXME|NOTE)/i, weight: 0.7, description: "Standard comments" },
+                    { pattern: /#.*(?:example|sample|demo)/i, weight: 0.7, description: "Example comments" },
+                    { pattern: /#.*(?:generated|created|written)/i, weight: 0.8, description: "Generation comments" },
+                ],
+                
+                // Code style (weight: 0.7)
+                style: [
+                    { pattern: /:\s*str/, weight: 0.7, description: "Type hints" },
+                    { pattern: /:\s*int/, weight: 0.7, description: "Type hints" },
+                    { pattern: /:\s*bool/, weight: 0.7, description: "Type hints" },
+                    { pattern: /->\s*None:/, weight: 0.7, description: "Return type hints" },
+                ]
+            };
+            
+            // Calculate AI source probabilities with advanced fingerprinting
+            function calculateAdvancedProbabilities(code) {
+                const probabilities = {
+                    user: 0.3,
+                    claude: 0.2,
+                    cursor: 0.2,
+                    grok: 0.1,
+                    ai: 0.2
+                };
+                
+                let cursorScore = 0;
+                let grokScore = 0;
+                let claudeScore = 0;
+                
+                // Analyze Cursor patterns
+                Object.values(cursorPatterns).forEach(category => {
+                    category.forEach(({ pattern, weight, description }) => {
+                        if (pattern.test(code)) {
+                            cursorScore += weight;
+                            // Debug: console.log(`Cursor pattern matched: ${description} (${weight})`);
+                        }
+                    });
+                });
+                
+                // Analyze Grok patterns
+                Object.values(grokPatterns).forEach(category => {
+                    category.forEach(({ pattern, weight, description }) => {
+                        if (pattern.test(code)) {
+                            grokScore += weight;
+                            // Debug: console.log(`Grok pattern matched: ${description} (${weight})`);
+                        }
+                    });
+                });
+                
+                // Analyze Claude patterns
+                Object.values(claudePatterns).forEach(category => {
+                    category.forEach(({ pattern, weight, description }) => {
+                        if (pattern.test(code)) {
+                            claudeScore += weight;
+                            // Debug: console.log(`Claude pattern matched: ${description} (${weight})`);
+                        }
+                    });
+                });
+                
+                // Apply weighted scoring
+                const totalScore = cursorScore + grokScore + claudeScore;
+                
+                if (totalScore > 0) {
+                    // Strong Cursor detection
+                    if (cursorScore >= 3.0) {
+                        probabilities.cursor += 0.60;
+                        probabilities.user -= 0.30;
+                        probabilities.ai -= 0.20;
+                        probabilities.grok -= 0.05;
+                        probabilities.claude -= 0.05;
+                    }
+                    // Medium Cursor detection
+                    else if (cursorScore >= 1.5) {
+                        probabilities.cursor += 0.40;
+                        probabilities.user -= 0.20;
+                        probabilities.ai -= 0.15;
+                        probabilities.grok -= 0.03;
+                        probabilities.claude -= 0.02;
+                    }
+                    // Light Cursor detection
+                    else if (cursorScore >= 0.5) {
+                        probabilities.cursor += 0.25;
+                        probabilities.user -= 0.10;
+                        probabilities.ai -= 0.10;
+                        probabilities.grok -= 0.03;
+                        probabilities.claude -= 0.02;
+                    }
+                    
+                    // Strong Grok detection
+                    if (grokScore >= 2.0) {
+                        probabilities.grok += 0.50;
+                        probabilities.user -= 0.20;
+                        probabilities.ai -= 0.20;
+                        probabilities.cursor -= 0.05;
+                        probabilities.claude -= 0.05;
+                    }
+                    // Medium Grok detection
+                    else if (grokScore >= 1.0) {
+                        probabilities.grok += 0.30;
+                        probabilities.user -= 0.10;
+                        probabilities.ai -= 0.15;
+                        probabilities.cursor -= 0.03;
+                        probabilities.claude -= 0.02;
+                    }
+                    
+                    // Strong Claude detection
+                    if (claudeScore >= 2.0) {
+                        probabilities.claude += 0.45;
+                        probabilities.user -= 0.20;
+                        probabilities.ai -= 0.15;
+                        probabilities.cursor -= 0.05;
+                        probabilities.grok -= 0.05;
+                    }
+                    // Medium Claude detection
+                    else if (claudeScore >= 1.0) {
+                        probabilities.claude += 0.25;
+                        probabilities.user -= 0.10;
+                        probabilities.ai -= 0.10;
+                        probabilities.cursor -= 0.03;
+                        probabilities.grok -= 0.02;
+                    }
+                }
+                
+                // Normalize probabilities
+                const total = Object.values(probabilities).reduce((sum, prob) => sum + prob, 0);
+                Object.keys(probabilities).forEach(source => {
+                    probabilities[source] = probabilities[source] / total;
+                });
+                
+                return probabilities;
+            }
+            
+            // Use the advanced fingerprinting system
+            const sourceProbabilities = calculateAdvancedProbabilities(code);
+            
+            // Replace with advanced probabilities
+            Object.keys(sourceProbabilities).forEach(source => {
+                probabilities[source] = sourceProbabilities[source];
             });
-            
-            // Strong Cursor identification
-            if (cursorScore >= 5) {
-                probabilities.cursor += 0.50;
-                probabilities.user -= 0.20;
-                probabilities.ai -= 0.20;
-                probabilities.grok -= 0.05;
-                probabilities.claude -= 0.05;
-            } else if (cursorScore >= 3) {
-                probabilities.cursor += 0.35;
-                probabilities.user -= 0.15;
-                probabilities.ai -= 0.15;
-                probabilities.grok -= 0.03;
-                probabilities.claude -= 0.02;
-            }
-            
-            // Cursor indicators
-            if (lowerCode.includes('cursor') || lowerCode.includes('vscode')) {
-                probabilities.cursor += 0.20;
-                probabilities.user -= 0.10;
-                probabilities.ai -= 0.10;
-            }
-            
-            // Grok indicators
-            if (lowerCode.includes('grok') || lowerCode.includes('x.ai') || 
-                lowerCode.includes('elon') || lowerCode.includes('musk') ||
-                lowerCode.includes('ass') || lowerCode.includes('blaster') ||
-                lowerCode.includes('meme') || lowerCode.includes('3000')) {
-                probabilities.grok += 0.35;
-                probabilities.user -= 0.15;
-                probabilities.ai -= 0.20;
-            }
-            
-            // Grok-specific humor patterns (only when actually present)
-            const grokPatterns = [
-                /💰|💦|🔫|💣|🚀/,  // Emoji patterns (Grok loves emojis)
-                /(?:elon|musk|tesla|spacex)/i,  // Elon-related content
-                /(?:ass|butt|booty)/i,  // Grok's signature humor
-                /(?:blaster|shot|gun)/i,  // Aggressive/violent themes
-                /(?:meme|dank|funny)/i,  // Meme culture
-                /(?:3000|9000|420)/i,  // Number patterns
-                /print\(["'][^"']*💰[^"']*["']/,  // Emoji in print statements
-                /print\(["'][^"']*ASS[^"']*["']/i,  // ASS in print statements
-            ];
-            
-            let grokScore = 0;
-            grokPatterns.forEach(pattern => {
-                if (pattern.test(code)) grokScore++;
-            });
-            
-            // Only apply Grok boost if there are actual Grok indicators
-            if (grokScore >= 2) {
-                probabilities.grok += 0.30;
-                probabilities.user -= 0.10;
-                probabilities.ai -= 0.15;
-                probabilities.claude -= 0.03;
-                probabilities.cursor -= 0.02;
-            }
-            
-            // Human code patterns (strong indicators)
-            const humanCodePatterns = [
-                /constructor\(\)\s*\{/,  // Class constructors
-                /addEventListener\(/,  // Event listeners
-                /localStorage\./,  // LocalStorage usage
-                /document\.getElementById\(/,  // DOM manipulation
-                /querySelector\(/,  // Modern DOM queries
-                /classList\./,  // ClassList API
-                /\.forEach\(/,  // Array methods
-                /\.map\(/,  // Array methods
-                /\.filter\(/,  // Array methods
-                /\.reduce\(/,  // Array methods
-                /template\s+literal/,  // Template literals
-                /const\s+\w+\s*=/,  // ES6 const declarations
-                /let\s+\w+\s*=/,  // ES6 let declarations
-                /=>\s*{/,  // Arrow functions
-                /\.\.\./,  // Spread operator
-                /async\s+function/,  // Async functions
-                /await\s+\w+/,  // Await expressions
-            ];
-            
-            let humanCodeScore = 0;
-            humanCodePatterns.forEach(pattern => {
-                if (pattern.test(code)) humanCodeScore++;
-            });
-            
-            // Strong boost for human code patterns
-            if (humanCodeScore >= 5) {
-                probabilities.user += 0.40;
-                probabilities.ai -= 0.20;
-                probabilities.grok -= 0.10;
-                probabilities.claude -= 0.05;
-                probabilities.cursor -= 0.05;
-            } else if (humanCodeScore >= 3) {
-                probabilities.user += 0.25;
-                probabilities.ai -= 0.15;
-                probabilities.grok -= 0.05;
-                probabilities.claude -= 0.03;
-                probabilities.cursor -= 0.02;
-            }
-            
-            // Check for clean, structured code (human indicator)
-            const cleanCodePatterns = [
-                /^\s*\/\/.*$/gm,  // Single-line comments
-                /^\s*\/\*[\s\S]*?\*\/\s*$/gm,  // Multi-line comments
-                /^\s*$/gm,  // Empty lines (formatting)
-                /function\s+\w+\s*\([^)]*\)\s*{/,  // Function declarations
-                /if\s*\([^)]*\)\s*{/,  // If statements
-                /for\s*\([^)]*\)\s*{/,  // For loops
-                /while\s*\([^)]*\)\s*{/,  // While loops
-                /try\s*{/,  // Try blocks
-                /catch\s*\([^)]*\)\s*{/,  // Catch blocks
-            ];
-            
-            let cleanCodeScore = 0;
-            cleanCodePatterns.forEach(pattern => {
-                if (pattern.test(code)) cleanCodeScore++;
-            });
-            
-            if (cleanCodeScore >= 4) {
-                probabilities.user += 0.15;
-                probabilities.ai -= 0.10;
-            }
-            
-            // Generic AI patterns
-            const aiPatterns = [
-                /#.*(?:generated|created|written|produced)/i,
-                /#.*(?:example|sample|demo)/i,
-                /#.*(?:here'?s|here is)/i,
-                /def\s+\w+\s*\([^)]*\):\s*"""[\s\S]*?"""/,
-                /print\([^)]*\)/,
-                /#.*TODO|FIXME|NOTE/i
-            ];
-            
-            let aiScore = 0;
-            aiPatterns.forEach(pattern => {
-                if (pattern.test(code)) aiScore++;
-            });
-            
-            if (aiScore >= 3) {
-                probabilities.ai += 0.15;
-                probabilities.user -= 0.05;
-                probabilities.claude -= 0.05;
-                probabilities.cursor -= 0.02;
-                probabilities.grok -= 0.03;
-            }
-            
-            // Flask/web app patterns (strong AI indicator)
             if (code.includes('Flask') || code.includes('app.route')) {
                 probabilities.ai += 0.10;
                 probabilities.claude += 0.05;
