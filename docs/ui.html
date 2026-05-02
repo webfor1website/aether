@@ -865,6 +865,9 @@ fn main() -> Int {
             const avgTrust = results.trust_score || 0.0;
             const primarySource = results.provenance && results.provenance.length > 0 ? results.provenance[0].source : 'unknown';
             
+            // Calculate AI source probabilities
+            const sourceProbabilities = calculateSourceProbabilities(currentCode);
+            
             card.innerHTML = `
                 <h4>Analysis Summary</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.875rem;">
@@ -873,12 +876,196 @@ fn main() -> Int {
                     <div><strong>Primary Source:</strong> ${primarySource}</div>
                     <div><strong>Analysis Mode:</strong> Offline</div>
                 </div>
+                
+                <div style="margin-top: 16px;">
+                    <h5 style="margin-bottom: 12px; font-size: 0.875rem;">Source Probability Analysis</h5>
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="position: relative; width: 120px; height: 120px;">
+                            ${createPieChart(sourceProbabilities)}
+                        </div>
+                        <div style="flex: 1;">
+                            ${Object.entries(sourceProbabilities).map(([source, prob]) => `
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.8rem;">
+                                    <div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${getSourceColor(source)};"></div>
+                                    <span style="flex: 1;">${source.charAt(0).toUpperCase() + source.slice(1)}</span>
+                                    <span style="font-weight: bold;">${(prob * 100).toFixed(1)}%</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                
                 <div style="margin-top: 12px; padding: 8px; background-color: #0d4f8c; border-radius: 4px; font-size: 0.875rem;">
-                    <strong>AI Detection:</strong> This code shows patterns consistent with AI-generated code (Flask web application, verbose comments, comprehensive documentation).
+                    <strong>AI Detection:</strong> ${getDetectionExplanation(sourceProbabilities)}
                 </div>
             `;
             
             return card;
+        }
+        
+        function calculateSourceProbabilities(code) {
+            const probabilities = {
+                user: 0.1,
+                claude: 0.25,
+                cursor: 0.15,
+                grok: 0.10,
+                ai: 0.40
+            };
+            
+            const lowerCode = code.toLowerCase();
+            
+            // Claude indicators
+            if (lowerCode.includes('claude') || lowerCode.includes('anthropic')) {
+                probabilities.claude += 0.20;
+                probabilities.user -= 0.10;
+                probabilities.ai -= 0.10;
+            }
+            
+            // Cursor indicators
+            if (lowerCode.includes('cursor') || lowerCode.includes('vscode')) {
+                probabilities.cursor += 0.20;
+                probabilities.user -= 0.10;
+                probabilities.ai -= 0.10;
+            }
+            
+            // Grok indicators
+            if (lowerCode.includes('grok') || lowerCode.includes('x.ai')) {
+                probabilities.grok += 0.20;
+                probabilities.user -= 0.10;
+                probabilities.ai -= 0.10;
+            }
+            
+            // Generic AI patterns
+            const aiPatterns = [
+                /#.*(?:generated|created|written|produced)/i,
+                /#.*(?:example|sample|demo)/i,
+                /#.*(?:here'?s|here is)/i,
+                /def\s+\w+\s*\([^)]*\):\s*"""[\s\S]*?"""/,
+                /print\([^)]*\)/,
+                /#.*TODO|FIXME|NOTE/i
+            ];
+            
+            let aiScore = 0;
+            aiPatterns.forEach(pattern => {
+                if (pattern.test(code)) aiScore++;
+            });
+            
+            if (aiScore >= 3) {
+                probabilities.ai += 0.15;
+                probabilities.user -= 0.05;
+                probabilities.claude -= 0.05;
+                probabilities.cursor -= 0.02;
+                probabilities.grok -= 0.03;
+            }
+            
+            // Flask/web app patterns (strong AI indicator)
+            if (code.includes('Flask') || code.includes('app.route')) {
+                probabilities.ai += 0.10;
+                probabilities.claude += 0.05;
+                probabilities.user -= 0.15;
+            }
+            
+            // Human indicators
+            const humanPatterns = [
+                /#.*(?:fix|bug|issue|problem)/i,
+                /#.*(?:todo|hack|temporary)/i,
+                /#.*(?:wip|work in progress)/i,
+                /print\(.*debug.*\)/i,
+                /#.*(?:test|testing)/i
+            ];
+            
+            let humanScore = 0;
+            humanPatterns.forEach(pattern => {
+                if (pattern.test(code)) humanScore++;
+            });
+            
+            if (humanScore >= 2) {
+                probabilities.user += 0.20;
+                probabilities.ai -= 0.10;
+                probabilities.claude -= 0.05;
+                probabilities.cursor -= 0.03;
+                probabilities.grok -= 0.02;
+            }
+            
+            // Normalize probabilities
+            const total = Object.values(probabilities).reduce((sum, prob) => sum + prob, 0);
+            Object.keys(probabilities).forEach(source => {
+                probabilities[source] = probabilities[source] / total;
+            });
+            
+            return probabilities;
+        }
+        
+        function getSourceColor(source) {
+            const colors = {
+                user: '#58a6ff',
+                claude: '#f85149',
+                cursor: '#fb8500',
+                grok: '#7c3aed',
+                ai: '#8b5cf6'
+            };
+            return colors[source] || '#8b949e';
+        }
+        
+        function createPieChart(probabilities) {
+            const size = 120;
+            const center = size / 2;
+            const radius = size / 2 - 10;
+            
+            let currentAngle = -90; // Start from top
+            let paths = [];
+            
+            Object.entries(probabilities).forEach(([source, probability]) => {
+                const angle = probability * 360;
+                const endAngle = currentAngle + angle;
+                
+                const x1 = center + radius * Math.cos(currentAngle * Math.PI / 180);
+                const y1 = center + radius * Math.sin(currentAngle * Math.PI / 180);
+                const x2 = center + radius * Math.cos(endAngle * Math.PI / 180);
+                const y2 = center + radius * Math.sin(endAngle * Math.PI / 180);
+                
+                const largeArcFlag = angle > 180 ? 1 : 0;
+                
+                const path = `
+                    M ${center} ${center}
+                    L ${x1} ${y1}
+                    A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}
+                    Z
+                `;
+                
+                paths.push(`
+                    <path d="${path}" fill="${getSourceColor(source)}" stroke="#21262d" stroke-width="2" opacity="0.9">
+                        <title>${source}: ${(probability * 100).toFixed(1)}%</title>
+                    </path>
+                `);
+                
+                currentAngle = endAngle;
+            });
+            
+            return `
+                <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="transform: rotate(-90deg);">
+                    ${paths.join('')}
+                    <circle cx="${center}" cy="${center}" r="${radius - 20}" fill="#0d1117" stroke="#21262d" stroke-width="2"/>
+                </svg>
+            `;
+        }
+        
+        function getDetectionExplanation(probabilities) {
+            const topSource = Object.entries(probabilities).reduce((max, [source, prob]) => 
+                prob > max.prob ? {source, prob} : max, {source: 'unknown', prob: 0});
+            
+            const humanProb = probabilities.user * 100;
+            const aiProb = (probabilities.claude + probabilities.cursor + probabilities.grok + probabilities.ai) * 100;
+            
+            if (aiProb > 70) {
+                return `High confidence AI-generated code (${aiProb.toFixed(1)}% AI vs ${humanProb.toFixed(1)}% human). Most likely ${topSource.source} (${(topSource.prob * 100).toFixed(1)}%).`;
+            } else if (aiProb > 50) {
+                return `Likely AI-generated code (${aiProb.toFixed(1)}% AI vs ${humanProb.toFixed(1)}% human). Pattern analysis suggests ${topSource.source}.`;
+            } else if (aiProb > 30) {
+                return `Mixed human/AI authorship (${aiProb.toFixed(1)}% AI vs ${humanProb.toFixed(1)}% human). Contains elements from multiple sources.`;
+            } else {
+                return `Likely human-written code (${humanProb.toFixed(1)}% human vs ${aiProb.toFixed(1)}% AI). Shows minimal AI patterns.`;
+            }
         }
         
         function createErrorCard(errors) {
