@@ -779,13 +779,17 @@ fn main() -> Int {
                 const correction = learningSystem.addCorrection(code, detectedSource, correctSource, confidence, notes);
                 console.log('Correction added:', correction);
                 
-                // Update the analysis results with adaptive probabilities
-                const baseProbabilities = calculateAdvancedProbabilities(code);
-                const adaptiveProbabilities = learningSystem.getAdaptiveProbabilities(code, baseProbabilities);
-                console.log('Adaptive probabilities:', adaptiveProbabilities);
-                
-                // Update the UI with new probabilities
-                updateAnalysisWithCorrection(adaptiveProbabilities, correctSource);
+                try {
+                    // Update the analysis results with adaptive probabilities
+                    const baseProbabilities = calculateAdvancedProbabilities(code);
+                    const adaptiveProbabilities = learningSystem.getAdaptiveProbabilities(code, baseProbabilities);
+                    
+                    // Update the UI with new probabilities
+                    updateAnalysisWithCorrection(adaptiveProbabilities, correctSource);
+                } catch (error) {
+                    console.log('Error updating probabilities, but correction was saved:', error);
+                    // Still show success message even if probability update fails
+                }
                 
                 closeCorrectionModal();
                 showMessage(`Correction saved! AI detection will improve for similar code patterns.`, 'success');
