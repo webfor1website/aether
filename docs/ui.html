@@ -779,20 +779,39 @@ fn main() -> Int {
                 const correction = learningSystem.addCorrection(code, detectedSource, correctSource, confidence, notes);
                 console.log('Correction added:', correction);
                 
-                try {
-                    // Update the analysis results with adaptive probabilities
-                    const baseProbabilities = calculateAdvancedProbabilities(code);
-                    const adaptiveProbabilities = learningSystem.getAdaptiveProbabilities(code, baseProbabilities);
+                // Update the analysis results immediately to show user feedback
+                if (analysisResults && analysisResults.provenance) {
+                    // Update the primary result with user's correction
+                    analysisResults.provenance[0] = {
+                        source: correctSource,
+                        confidence: 1.0,
+                        function: analysisResults.provenance[0].function || 'main',
+                        trust_score: getTrustWeight(correctSource)
+                    };
                     
-                    // Update the UI with new probabilities
-                    updateAnalysisWithCorrection(adaptiveProbabilities, correctSource);
-                } catch (error) {
-                    console.log('Error updating probabilities, but correction was saved:', error);
-                    // Still show success message even if probability update fails
+                    // Update source probabilities to reflect user's correction
+                    const updatedProbabilities = {
+                        user: correctSource === 'user' ? 0.8 : 0.1,
+                        claude: correctSource === 'claude' ? 0.8 : 0.1,
+                        cursor: correctSource === 'cursor' ? 0.8 : 0.1,
+                        grok: correctSource === 'grok' ? 0.8 : 0.1,
+                        ai: correctSource === 'ai' ? 0.8 : 0.1
+                    };
+                    
+                    // Normalize probabilities
+                    const total = Object.values(updatedProbabilities).reduce((sum, prob) => sum + prob, 0);
+                    Object.keys(updatedProbabilities).forEach(source => {
+                        updatedProbabilities[source] = updatedProbabilities[source] / total;
+                    });
+                    
+                    analysisResults.sourceProbabilities = updatedProbabilities;
+                    
+                    // Update the UI
+                    updateResults(analysisResults);
                 }
                 
                 closeCorrectionModal();
-                showMessage(`Correction saved! AI detection will improve for similar code patterns.`, 'success');
+                showMessage(`✅ Correction saved! ${correctSource === 'grok' ? 'Grok' : correctSource} pattern weights updated for future detection.`, 'success');
             } catch (error) {
                 console.error('Error submitting correction:', error);
                 showMessage('Error saving correction: ' + error.message, 'error');
