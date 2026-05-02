@@ -51,6 +51,10 @@ enum Commands {
         format: String,
     },
     Integrate,
+    Init {
+        #[arg(default_value = ".")]
+        name: String,
+    },
 }
 
 /// Policy configuration loaded from .aether-policy.toml
@@ -2085,6 +2089,87 @@ format = "text"
             println!("  2. Run: aether report . to see trust scores");
             println!("  3. Add to CI: uses: webfor1website/aether/.github/workflows/aether-check.yml@main");
             println!("  4. Commit .aether-policy.toml to enforce policy across your team");
+        }
+
+        Some(Commands::Init { name }) => {
+            // Determine target directory
+            let current_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+            let target_dir = if name == "." {
+                current_dir.clone()
+            } else {
+                current_dir.join(&name)
+            };
+            
+            // Create directory if it doesn't exist (only for new projects)
+            if name != "." {
+                if let Err(e) = std::fs::create_dir(&target_dir) {
+                    if e.kind() != std::io::ErrorKind::AlreadyExists {
+                        eprintln!("Error creating directory {}: {}", target_dir.display(), e);
+                        std::process::exit(1);
+                    }
+                }
+            }
+            
+            // Create main.ae
+            let main_content = r#"@prov(source: "user", confidence: 1.0)
+fn main() -> Int {
+  42
+}"#;
+            
+            let main_path = target_dir.join("main.ae");
+            match std::fs::write(&main_path, main_content) {
+                Ok(()) => {
+                    println!("[aether] created: main.ae");
+                }
+                Err(e) => {
+                    eprintln!("Error writing main.ae: {}", e);
+                    std::process::exit(1);
+                }
+            }
+            
+            // Create .aether-policy.toml
+            let policy_content = r#"[trust]
+min_trust = 0.7
+mode = "report"
+scoring = "weighted"
+
+[output]
+format = "text"
+"#;
+            
+            let policy_path = target_dir.join(".aether-policy.toml");
+            match std::fs::write(&policy_path, policy_content) {
+                Ok(()) => {
+                    println!("[aether] created: .aether-policy.toml");
+                }
+                Err(e) => {
+                    eprintln!("Error writing .aether-policy.toml: {}", e);
+                    std::process::exit(1);
+                }
+            }
+            
+            // Create .aether-wellbeing
+            let wellbeing_content = "min_trust: 0.7\n";
+            
+            let wellbeing_path = target_dir.join(".aether-wellbeing");
+            match std::fs::write(&wellbeing_path, wellbeing_content) {
+                Ok(()) => {
+                    println!("[aether] created: .aether-wellbeing");
+                }
+                Err(e) => {
+                    eprintln!("Error writing .aether-wellbeing: {}", e);
+                    std::process::exit(1);
+                }
+            }
+            
+            // Print success message
+            if name == "." {
+                println!("[aether] initialized new project in current directory");
+            } else {
+                println!("[aether] initialized new project: {}", name);
+            }
+            
+            println!("[aether] run: aether run --session-id dev main.ae");
         }
 
         None => {
