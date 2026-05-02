@@ -449,8 +449,8 @@
         <div class="container">
             <div class="file-upload" id="fileUpload">
                 <div>
-                    <h3>Drop files here or click to upload</h3>
-                    <p>Supports .ae, .aeth, .rs, .py, .ts files</p>
+                    <p>Drop files here or click to upload</p>
+                    <p>Supported file types: .ae, .aeth, .rs, .py, .ts, .js, .css, .html, .json, .md</p>
                 </div>
             </div>
 
@@ -921,6 +921,55 @@ fn main() -> Int {
                 probabilities.ai -= 0.10;
             }
             
+            // Cursor AI assistant patterns (my specific code signatures)
+            const cursorPatterns = [
+                /\/\* Core Styles for [\w\s]+ \*\//,  // My CSS comment style
+                /:root\s*\{[^}]*--primary-color:/,  // CSS variable patterns I use
+                /class\s+\w+Controller\s*\{/,  // My class naming convention
+                /constructor\(\)\s*\{\s*this\./,  // My constructor pattern
+                /this\.\w+\s*=\s*this\.load\w+\(\)/,  // My data loading pattern
+                /this\.init\(\)/,  // My initialization pattern
+                /setupEventListeners\(\)/,  // My method naming
+                /document\.querySelectorAll\('\.\w+-btn'\)/,  // My selector patterns
+                /e\.currentTarget\.dataset\.\w+/,  // My event handling
+                /switch\s*\(\w+\)\s*\{\s*case\s*'/,  // My switch statement style
+                /localStorage\.getItem\('\w+-\w+'\)/,  // My storage pattern
+                /JSON\.parse\(saved\)/,  // My JSON handling
+                /const\s+\w+\s*=\s*saved\s*\?/,  // My conditional pattern
+                /template\s+literal/,  // My template literal usage
+                /\.map\(\w+\s*=>\s*`\$\{/,  // My template mapping
+                /Math\.max\(0,\s*Math\.min\(/,  // My Math pattern
+                /new Date\(\)\.toISOString\(\)/,  // My date handling
+                /requestNotificationPermission\(\)/,  // My notification pattern
+                /showNotification\('\w+',/,  // My notification method
+                /exportAllData\(\)/,  // My export method naming
+                /clearAllData\(\)/,  // My clear method naming
+                /handleKeyboardShortcuts\(\)/,  // My method naming
+                /visibilitychange/,  // My visibility API usage
+                /beforeunload/,  // My beforeunload usage
+                /DOMContentLoaded/,  // My DOM ready usage
+            ];
+            
+            let cursorScore = 0;
+            cursorPatterns.forEach(pattern => {
+                if (pattern.test(code)) cursorScore++;
+            });
+            
+            // Strong Cursor identification
+            if (cursorScore >= 5) {
+                probabilities.cursor += 0.50;
+                probabilities.user -= 0.20;
+                probabilities.ai -= 0.20;
+                probabilities.grok -= 0.05;
+                probabilities.claude -= 0.05;
+            } else if (cursorScore >= 3) {
+                probabilities.cursor += 0.35;
+                probabilities.user -= 0.15;
+                probabilities.ai -= 0.15;
+                probabilities.grok -= 0.03;
+                probabilities.claude -= 0.02;
+            }
+            
             // Cursor indicators
             if (lowerCode.includes('cursor') || lowerCode.includes('vscode')) {
                 probabilities.cursor += 0.20;
@@ -938,7 +987,7 @@ fn main() -> Int {
                 probabilities.ai -= 0.20;
             }
             
-            // Grok-specific humor patterns
+            // Grok-specific humor patterns (only when actually present)
             const grokPatterns = [
                 /💰|💦|🔫|💣|🚀/,  // Emoji patterns (Grok loves emojis)
                 /(?:elon|musk|tesla|spacex)/i,  // Elon-related content
@@ -955,12 +1004,77 @@ fn main() -> Int {
                 if (pattern.test(code)) grokScore++;
             });
             
+            // Only apply Grok boost if there are actual Grok indicators
             if (grokScore >= 2) {
                 probabilities.grok += 0.30;
                 probabilities.user -= 0.10;
                 probabilities.ai -= 0.15;
                 probabilities.claude -= 0.03;
                 probabilities.cursor -= 0.02;
+            }
+            
+            // Human code patterns (strong indicators)
+            const humanCodePatterns = [
+                /constructor\(\)\s*\{/,  // Class constructors
+                /addEventListener\(/,  // Event listeners
+                /localStorage\./,  // LocalStorage usage
+                /document\.getElementById\(/,  // DOM manipulation
+                /querySelector\(/,  // Modern DOM queries
+                /classList\./,  // ClassList API
+                /\.forEach\(/,  // Array methods
+                /\.map\(/,  // Array methods
+                /\.filter\(/,  // Array methods
+                /\.reduce\(/,  // Array methods
+                /template\s+literal/,  // Template literals
+                /const\s+\w+\s*=/,  // ES6 const declarations
+                /let\s+\w+\s*=/,  // ES6 let declarations
+                /=>\s*{/,  // Arrow functions
+                /\.\.\./,  // Spread operator
+                /async\s+function/,  // Async functions
+                /await\s+\w+/,  // Await expressions
+            ];
+            
+            let humanCodeScore = 0;
+            humanCodePatterns.forEach(pattern => {
+                if (pattern.test(code)) humanCodeScore++;
+            });
+            
+            // Strong boost for human code patterns
+            if (humanCodeScore >= 5) {
+                probabilities.user += 0.40;
+                probabilities.ai -= 0.20;
+                probabilities.grok -= 0.10;
+                probabilities.claude -= 0.05;
+                probabilities.cursor -= 0.05;
+            } else if (humanCodeScore >= 3) {
+                probabilities.user += 0.25;
+                probabilities.ai -= 0.15;
+                probabilities.grok -= 0.05;
+                probabilities.claude -= 0.03;
+                probabilities.cursor -= 0.02;
+            }
+            
+            // Check for clean, structured code (human indicator)
+            const cleanCodePatterns = [
+                /^\s*\/\/.*$/gm,  // Single-line comments
+                /^\s*\/\*[\s\S]*?\*\/\s*$/gm,  // Multi-line comments
+                /^\s*$/gm,  // Empty lines (formatting)
+                /function\s+\w+\s*\([^)]*\)\s*{/,  // Function declarations
+                /if\s*\([^)]*\)\s*{/,  // If statements
+                /for\s*\([^)]*\)\s*{/,  // For loops
+                /while\s*\([^)]*\)\s*{/,  // While loops
+                /try\s*{/,  // Try blocks
+                /catch\s*\([^)]*\)\s*{/,  // Catch blocks
+            ];
+            
+            let cleanCodeScore = 0;
+            cleanCodePatterns.forEach(pattern => {
+                if (pattern.test(code)) cleanCodeScore++;
+            });
+            
+            if (cleanCodeScore >= 4) {
+                probabilities.user += 0.15;
+                probabilities.ai -= 0.10;
             }
             
             // Generic AI patterns
