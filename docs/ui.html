@@ -749,9 +749,13 @@ fn main() -> Int {
         }
 
         function submitCorrection() {
+            console.log('Submit correction clicked');
+            
             const correctSource = document.getElementById('correct-source').value;
             const confidence = parseInt(document.getElementById('correction-confidence').value);
             const notes = document.getElementById('correction-notes').value;
+            
+            console.log('Form data:', { correctSource, confidence, notes });
             
             if (!correctSource) {
                 showMessage('Please select the correct AI source', 'error');
@@ -763,30 +767,37 @@ fn main() -> Int {
                 return;
             }
             
+            console.log('Analysis results found:', analysisResults.provenance[0]);
+            
             const detectedSource = analysisResults.provenance[0].source;
             const code = currentCode;
             
-            // Add correction to learning system
-            const correction = learningSystem.addCorrection(code, detectedSource, correctSource, confidence, notes);
+            console.log('Adding correction:', { detectedSource, correctSource, confidence });
             
-            // Update the analysis results with adaptive probabilities
-            const baseProbabilities = calculateAdvancedProbabilities(code);
-            const adaptiveProbabilities = learningSystem.getAdaptiveProbabilities(code, baseProbabilities);
-            
-            // Update the UI with new probabilities
-            updateAnalysisWithCorrection(adaptiveProbabilities, correctSource);
-            
-            closeCorrectionModal();
-            showMessage(`Correction saved! AI detection will improve for similar code patterns.`, 'success');
+            try {
+                // Add correction to learning system
+                const correction = learningSystem.addCorrection(code, detectedSource, correctSource, confidence, notes);
+                console.log('Correction added:', correction);
+                
+                // Update the analysis results with adaptive probabilities
+                const baseProbabilities = calculateAdvancedProbabilities(code);
+                const adaptiveProbabilities = learningSystem.getAdaptiveProbabilities(code, baseProbabilities);
+                console.log('Adaptive probabilities:', adaptiveProbabilities);
+                
+                // Update the UI with new probabilities
+                updateAnalysisWithCorrection(adaptiveProbabilities, correctSource);
+                
+                closeCorrectionModal();
+                showMessage(`Correction saved! AI detection will improve for similar code patterns.`, 'success');
+            } catch (error) {
+                console.error('Error submitting correction:', error);
+                showMessage('Error saving correction: ' + error.message, 'error');
+            }
         }
 
         function updateAnalysisWithCorrection(probabilities, correctSource) {
             // Update the provenance with corrected source
             if (analysisResults && analysisResults.provenance) {
-                // Find the highest probability source
-                const topSource = Object.entries(probabilities).reduce((max, [source, prob]) => 
-                    prob > max.prob ? {source, prob} : max, {source: 'unknown', prob: 0});
-                
                 // Update the primary result
                 analysisResults.provenance[0] = {
                     source: correctSource, // Use user's correction as primary
@@ -795,8 +806,11 @@ fn main() -> Int {
                     trust_score: getTrustWeight(correctSource)
                 };
                 
+                // Update the source probability analysis
+                analysisResults.sourceProbabilities = probabilities;
+                
                 // Re-update the UI
-                updateUI(analysisResults);
+                updateResults(analysisResults);
                 
                 // Show learning stats
                 const stats = learningSystem.getTrainingStats();
