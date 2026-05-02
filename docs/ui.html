@@ -1248,7 +1248,7 @@ fn main() -> Int {
             
             // Advanced AI Fingerprinting System
 
-// Calculate AI source probabilities with advanced fingerprinting
+// Calculate AI source probabilities with advanced fingerprinting and local learning
 function calculateAdvancedProbabilities(code) {
     const probabilities = {
         user: 0.3,
@@ -1262,37 +1262,51 @@ function calculateAdvancedProbabilities(code) {
     let grokScore = 0;
     let claudeScore = 0;
     
-    // Analyze Cursor patterns
+    // Get local pattern weights from learning system
+    const localWeights = learningSystem ? learningSystem.patternWeights : {};
+    
+    // Analyze Cursor patterns with local weights
     Object.values(cursorPatterns).forEach(category => {
         category.forEach(({ pattern, weight, description }) => {
             if (pattern.test(code)) {
-                cursorScore += weight;
-                // Debug: console.log(`Cursor pattern matched: ${description} (${weight})`);
+                // Apply local weight adjustment if available
+                const localWeight = localWeights.cursor && localWeights.cursor[description];
+                const adjustedWeight = localWeight ? localWeight.weight : weight;
+                cursorScore += adjustedWeight;
+                console.log(`Cursor pattern matched: ${description} (${adjustedWeight.toFixed(2)})`);
             }
         });
     });
     
-    // Analyze Grok patterns
+    // Analyze Grok patterns with local weights
     Object.values(grokPatterns).forEach(category => {
         category.forEach(({ pattern, weight, description }) => {
             if (pattern.test(code)) {
-                grokScore += weight;
-                // Debug: console.log(`Grok pattern matched: ${description} (${weight})`);
+                // Apply local weight adjustment if available
+                const localWeight = localWeights.grok && localWeights.grok[description];
+                const adjustedWeight = localWeight ? localWeight.weight : weight;
+                grokScore += adjustedWeight;
+                console.log(`Grok pattern matched: ${description} (${adjustedWeight.toFixed(2)})`);
             }
         });
     });
     
-    // Analyze Claude patterns
+    // Analyze Claude patterns with local weights
     Object.values(claudePatterns).forEach(category => {
         category.forEach(({ pattern, weight, description }) => {
             if (pattern.test(code)) {
-                claudeScore += weight;
-                // Debug: console.log(`Claude pattern matched: ${description} (${weight})`);
+                // Apply local weight adjustment if available
+                const localWeight = localWeights.claude && localWeights.claude[description];
+                const adjustedWeight = localWeight ? localWeight.weight : weight;
+                claudeScore += adjustedWeight;
+                console.log(`Claude pattern matched: ${description} (${adjustedWeight.toFixed(2)})`);
             }
         });
     });
     
-    // Apply weighted scoring
+    console.log(`Pattern scores - Cursor: ${cursorScore.toFixed(2)}, Grok: ${grokScore.toFixed(2)}, Claude: ${claudeScore.toFixed(2)}`);
+    
+    // Apply weighted scoring with local adjustments
     const totalScore = cursorScore + grokScore + claudeScore;
     
     if (totalScore > 0) {
@@ -1337,6 +1351,14 @@ function calculateAdvancedProbabilities(code) {
             probabilities.cursor -= 0.03;
             probabilities.claude -= 0.02;
         }
+        // Light Grok detection
+        else if (grokScore >= 0.5) {
+            probabilities.grok += 0.15;
+            probabilities.user -= 0.05;
+            probabilities.ai -= 0.05;
+            probabilities.cursor -= 0.02;
+            probabilities.claude -= 0.03;
+        }
         
         // Strong Claude detection
         if (claudeScore >= 2.0) {
@@ -1354,6 +1376,14 @@ function calculateAdvancedProbabilities(code) {
             probabilities.cursor -= 0.03;
             probabilities.grok -= 0.02;
         }
+        // Light Claude detection
+        else if (claudeScore >= 0.5) {
+            probabilities.claude += 0.15;
+            probabilities.user -= 0.05;
+            probabilities.ai -= 0.05;
+            probabilities.cursor -= 0.02;
+            probabilities.grok -= 0.03;
+        }
     }
     
     // Normalize probabilities
@@ -1362,6 +1392,7 @@ function calculateAdvancedProbabilities(code) {
         probabilities[source] = probabilities[source] / total;
     });
     
+    console.log('Final probabilities:', probabilities);
     return probabilities;
 }
             
