@@ -1005,6 +1005,31 @@ fn main() -> Int {
             
             // Grok-specific patterns (high confidence indicators)
             const grokPatterns = {
+                // Rust CLI patterns (weight: 0.9)
+                rustCli: [
+                    { pattern: /use clap::Parser;/, weight: 0.9, description: "Clap parser import" },
+                    { pattern: /#\[derive\(Parser\)\]/, weight: 0.9, description: "Parser derive macro" },
+                    { pattern: /#\[command\(author, version, about\)\]/, weight: 0.9, description: "Command attributes" },
+                    { pattern: /struct Args \{/, weight: 0.8, description: "Args struct" },
+                    { pattern: /#\[arg\(short, long\)\]/, weight: 0.9, description: "Argument attributes" },
+                    { pattern: /let args = Args::parse\(\);/, weight: 0.9, description: "Parse args pattern" },
+                    { pattern: /println!\("Hallucination Analysis Report"\);/, weight: 0.9, description: "Analysis report pattern" },
+                    { pattern: /println!\("====="\);/, weight: 0.8, description: "Separator pattern" },
+                    { pattern: /for issue in report\.issues \{/, weight: 0.8, description: "Issue iteration pattern" },
+                    { pattern: /println!\("\[{}\] {}", issue\.severity, issue\.description\);/, weight: 0.9, description: "Issue display pattern" },
+                ],
+                
+                // System tool patterns (weight: 0.8)
+                systemTools: [
+                    { pattern: /fn main\(\) \{/, weight: 0.7, description: "Main function" },
+                    { pattern: /let detector = Detector::new\(&args\.lang\);/, weight: 0.8, description: "Detector instantiation" },
+                    { pattern: /let report = detector\.analyze_file\(&args\.file\);/, weight: 0.8, description: "Analysis pattern" },
+                    { pattern: /report\.issues\.len\(\)/, weight: 0.7, description: "Length check" },
+                    { pattern: /report\.confidence/, weight: 0.8, description: "Confidence access" },
+                    { pattern: /issue\.severity/, weight: 0.7, description: "Severity access" },
+                    { pattern: /issue\.description/, weight: 0.7, description: "Description access" },
+                ],
+                
                 // Content patterns (weight: 0.9)
                 content: [
                     { pattern: /💰|💦|🔫|💣|🚀/, weight: 0.9, description: "Emoji usage" },
@@ -1013,6 +1038,8 @@ fn main() -> Int {
                     { pattern: /(?:blaster|shot|gun)/i, weight: 0.8, description: "Aggressive themes" },
                     { pattern: /(?:meme|dank|funny)/i, weight: 0.8, description: "Meme culture" },
                     { pattern: /(?:3000|9000|420)/i, weight: 0.7, description: "Number patterns" },
+                    { pattern: /hallucination/i, weight: 0.8, description: "Hallucination analysis" },
+                    { pattern: /detector/i, weight: 0.7, description: "Detector terminology" },
                 ],
                 
                 // Linguistic patterns (weight: 0.8)
